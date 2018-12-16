@@ -1,17 +1,51 @@
 #!/usr/bin/env node
 const logSymbols = require('log-symbols');
-const argv = require('yargs').argv;
 const lib = require('../lib/index');
+const util = require('../lib/util');
+const fs = require('fs');
 
-var urls = [];
-if (Array.isArray(argv.u) || typeof argv.u === 'string') {
-	urls = urls.concat(argv.u);
+var argv = require('yargs')
+	.usage('twdl [options] <URLs>')
+	.option('f', {
+		alias: 'format',
+		default: util.DEFAULT_FORMAT,
+		describe: 'Set filename format',
+		type: 'string'
+	})
+	.option('l', {
+		alias: 'list',
+		default: '',
+		describe: 'Load tweets from a file',
+		type: 'string'
+	})
+	.option('s', {
+		alias: 'source',
+		default: false,
+		describe: 'Embed tweet & media URL in IPTC',
+		type: 'boolean'
+	})
+	.alias('h', 'help')
+	.argv;
+
+var urls = argv._;
+if (argv.list !== '') {
+	try {
+		var text = fs.readFileSync(argv.list);
+	} catch (e) {
+		console.log(`${logSymbols.error} ${e.toString()}`);
+	} finally {
+		urls = urls.concat(text.toString().trim().split('\n'));
+	}
 }
 
 if (urls.length === 0) {
-	console.log(`${logSymbols.error} Provide URL(s) with -u.`);
+	console.log(`${logSymbols.error} No URL is provided. See 'twdl help'.`);
 	process.exit(1);
-} else {
-	console.log(`${logSymbols.info} Received ${urls.length} URLs.`);
-	lib.downloadUrls(urls);
 }
+
+console.log(`${logSymbols.info} Received ${urls.length} URLs.`);
+var options = {
+	source: argv.source,
+	format: argv.format,
+};
+lib.downloadUrls(urls, options);
