@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Doğan Çelik",
     "email": "dogancelik93@gmail.com"
