@@ -6,7 +6,7 @@ You can use [twitter-photos](https://github.com/shichao-an/twitter-photos) inste
 
 ## Install
 
-You need [Node.js](https://nodejs.org/en/) to use *twdl*.
+You need [Node.js](https://nodejs.org/en/) (at least version 8) to use *twdl*.
 You can also use `npx` (available with NPM 5+).
 
 ```sh

@@ -18,11 +18,17 @@ var argv = require('yargs')
 		describe: 'Load tweets from a file',
 		type: 'string'
 	})
-	.option('s', {
-		alias: 'source',
+	.option('e', {
+		alias: 'embed',
 		default: false,
 		describe: 'Embed tweet & media URL in IPTC',
 		type: 'boolean'
+	})
+	.option('d', {
+		alias: 'data',
+		default: '',
+		describe: 'Embed additional data',
+		type: 'string'
 	})
 	.alias('h', 'help')
 	.argv;
@@ -45,7 +51,8 @@ if (urls.length === 0) {
 
 console.log(`${logSymbols.info} Received ${urls.length} URLs.`);
 var options = {
-	source: argv.source,
+	embed: argv.embed,
+	data: argv.data,
 	format: argv.format,
 };
 lib.downloadUrls(urls, options);
