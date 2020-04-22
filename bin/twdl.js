@@ -30,6 +30,12 @@ var argv = require('yargs')
 		describe: 'Embed additional data',
 		type: 'string'
 	})
+	.option('o', {
+		alias: 'overwrite',
+		default: false,
+		describe: 'Overwrite already existing file',
+		type: 'boolean'
+	})
 	.alias('h', 'help')
 	.argv;
 
@@ -53,6 +59,7 @@ console.log(`${logSymbols.info} Received ${urls.length} URLs.`);
 var options = {
 	embed: argv.embed,
 	data: argv.data,
+	overwrite: argv.overwrite,
 	format: argv.format,
 };
 lib.downloadUrls(urls, options);
