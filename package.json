@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": {
     "name": "Doğan Çelik",
     "email": "dogancelik93@gmail.com"
@@ -39,7 +39,8 @@
       "ecmaVersion": 2017
     },
     "rules": {
-      "no-console": "off"
+      "no-console": "off",
+      "no-empty": [true, "allow-empty-catch"]
     }
   }
 }

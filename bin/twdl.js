@@ -1,43 +1,18 @@
 #!/usr/bin/env node
 const logSymbols = require('log-symbols');
 const lib = require('../lib/index');
-const util = require('../lib/util');
+const yargsOptions = require('../lib/options').options;
 const fs = require('fs');
 
-var argv = require('yargs')
+var yargs = require('yargs')
 	.usage('twdl [options] <URLs>')
-	.option('f', {
-		alias: 'format',
-		default: util.DEFAULT_FORMAT,
-		describe: 'Set filename format',
-		type: 'string'
-	})
-	.option('l', {
-		alias: 'list',
-		default: '',
-		describe: 'Load tweets from a file',
-		type: 'string'
-	})
-	.option('e', {
-		alias: 'embed',
-		default: false,
-		describe: 'Embed tweet & media URL in IPTC',
-		type: 'boolean'
-	})
-	.option('d', {
-		alias: 'data',
-		default: '',
-		describe: 'Embed additional data',
-		type: 'string'
-	})
-	.option('o', {
-		alias: 'overwrite',
-		default: false,
-		describe: 'Overwrite already existing file',
-		type: 'boolean'
-	})
-	.alias('h', 'help')
-	.argv;
+	.alias('h', 'help');
+
+for (let [key, val] of Object.entries(yargsOptions)) {
+	yargs.option(key, val);
+}
+
+var argv = yargs.argv;
 
 var urls = argv._;
 if (argv.list !== '') {
@@ -61,5 +36,10 @@ var options = {
 	data: argv.data,
 	overwrite: argv.overwrite,
 	format: argv.format,
+	date: argv.date,
 };
-lib.downloadUrls(urls, options);
+
+lib.downloadUrls(urls, options).catch(function (err) {
+	console.log(`${logSymbols.error} Error occurred: ${err.toString()}`);
+	process.exit(2);
+});
