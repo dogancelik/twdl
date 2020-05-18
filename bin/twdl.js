@@ -40,6 +40,6 @@ var options = {
 };
 
 lib.downloadUrls(urls, options).catch(function (err) {
-	console.log(`${logSymbols.error} Error occurred: ${err.toString()}`);
+	console.log(`${logSymbols.error} Error occurred:`, err);
 	process.exit(2);
 });
