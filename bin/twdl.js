@@ -32,6 +32,7 @@ if (urls.length === 0) {
 
 console.log(`${logSymbols.info} Received ${urls.length} URLs.`);
 var options = {
+	avatar: argv.avatar,
 	embed: argv.embed,
 	data: argv.data,
 	overwrite: argv.overwrite,
