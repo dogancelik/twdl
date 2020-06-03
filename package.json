@@ -14,6 +14,9 @@
     "video",
     "downloader"
   ],
+  "engines": {
+    "node": ">=10"
+  },
   "main": "lib/index.js",
   "bin": {
     "twdl": "./bin/twdl.js"
