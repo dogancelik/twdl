@@ -2,6 +2,8 @@
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
   "version": "1.0.1",
+  "license": "MIT",
+  "repository": "github:dogancelik/twdl",
   "author": {
     "name": "Doğan Çelik",
     "email": "dogancelik93@gmail.com"
@@ -26,8 +28,8 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
-    "exiftool-vendored": "^11.1.0",
-    "log-symbols": "^3.0.0",
+    "exiftool-vendored": "^11.3.0",
+    "log-symbols": "^4.0.0",
     "mkdirp": "^1.0.4",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
