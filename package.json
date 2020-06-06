@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
@@ -30,18 +30,17 @@
     "cheerio": "^1.0.0-rc.3",
     "exiftool-vendored": "^11.3.0",
     "log-symbols": "^4.0.0",
+    "merge-options": "^2.0.0",
     "mkdirp": "^1.0.4",
+    "puppeteer": "^3.3.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "yargs": "^15.3.1"
   },
   "eslintConfig": {
     "env": {
-      "es6": true,
+      "es2017": true,
       "node": true
-    },
-    "parserOptions": {
-      "ecmaVersion": 2017
     },
     "rules": {
       "no-console": "off",
