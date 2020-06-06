@@ -43,6 +43,10 @@ var options = {
 };
 
 lib.downloadUrls(urls, options).catch(function (err) {
+	// @ts-ignore
+	if (typeof v8debug === 'object') {
+		throw err;
+	}
 	console.error(`${logSymbols.error} Error occurred:`, err);
 	process.exit(2);
 });
