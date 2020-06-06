@@ -9,6 +9,7 @@ var yargs = require('yargs')
 	.alias('h', 'help');
 
 for (let [key, val] of Object.entries(yargsOptions)) {
+	// @ts-ignore
 	yargs.option(key, val);
 }
 
@@ -17,6 +18,7 @@ var argv = yargs.argv;
 var urls = argv._;
 if (argv.list !== '') {
 	try {
+		// @ts-ignore
 		var text = fs.readFileSync(argv.list);
 	} catch (e) {
 		console.log(`${logSymbols.error} ${e.toString()}`);
