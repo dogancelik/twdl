@@ -40,7 +40,12 @@ var options = {
 	overwrite: argv.overwrite,
 	format: argv.format,
 	date: argv.date,
+	cookie: argv.cookie,
 };
+
+if (process.env.TWDL_COOKIE != null && options.cookie === '') {
+	options.cookie = process.env.TWDL_COOKIE;
+}
 
 lib.downloadUrls(urls, options).catch(function (err) {
 	// @ts-ignore
