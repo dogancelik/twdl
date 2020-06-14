@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
@@ -24,7 +24,7 @@
     "twdl": "./bin/twdl.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
@@ -40,12 +40,28 @@
   "eslintConfig": {
     "env": {
       "es2017": true,
-      "node": true
+      "node": true,
+      "mocha": true
     },
     "rules": {
       "no-console": "off",
-      "no-empty": [1, { "allowEmptyCatch": true }],
-      "semi": [1, "always"]
+      "no-empty": [
+        1,
+        {
+          "allowEmptyCatch": true
+        }
+      ],
+      "semi": [
+        2,
+        "always"
+      ]
     }
+  },
+  "mocha": {
+    "timeout": 10000
+  },
+  "devDependencies": {
+    "@types/mocha": "^7.0.2",
+    "mocha": "^8.0.1"
   }
 }
