@@ -1,4 +1,4 @@
-const assert = require('assert');
+const assert = require('chai').assert;
 
 const index = require('../lib/index');
 const util = require('../lib/util');
@@ -36,7 +36,7 @@ describe('Twdl', function () {
 		return index.downloadUrls([tweets[1]], options).then((results) => {
 			testIfAllDownloaded(results);
 			let videoUrl = results[0][0][1];
-			assert.match(videoUrl, /\.mp4/i, 'Media URL should be a mp4 video');
+			assert.match(videoUrl, /\.mp4/i, 'Media URL should be an mp4 video');
 			return results;
 		});
 	});
