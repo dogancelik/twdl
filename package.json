@@ -44,10 +44,8 @@
     },
     "rules": {
       "no-console": "off",
-      "no-empty": [
-        true,
-        "allow-empty-catch"
-      ]
+      "no-empty": [1, { "allowEmptyCatch": true }],
+      "semi": [1, "always"]
     }
   }
 }
