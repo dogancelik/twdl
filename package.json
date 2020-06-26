@@ -32,7 +32,7 @@
     "log-symbols": "^4.0.0",
     "merge-options": "^2.0.0",
     "mkdirp": "^1.0.4",
-    "puppeteer": "^3.3.0",
+    "puppeteer": "^4.0.1",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "yargs": "^15.3.1"
