@@ -33,21 +33,11 @@ if (urls.length === 0) {
 }
 
 console.log(`${logSymbols.info} Received ${urls.length} URLs.`);
-var options = {
-	avatar: argv.avatar,
-	embed: argv.embed,
-	data: argv.data,
-	overwrite: argv.overwrite,
-	format: argv.format,
-	date: argv.date,
-	cookie: argv.cookie,
-};
-
-if (process.env.TWDL_COOKIE != null && options.cookie === '') {
-	options.cookie = process.env.TWDL_COOKIE;
+if (process.env.TWDL_COOKIE != null && argv.cookie === '') {
+	argv.cookie = process.env.TWDL_COOKIE;
 }
 
-lib.downloadUrls(urls, options).catch(function (err) {
+lib.downloadUrls(urls, argv).catch(function (err) {
 	// @ts-ignore
 	if (typeof v8debug === 'object') {
 		throw err;
