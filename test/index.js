@@ -19,9 +19,9 @@ const options = {
 	cookie: '',
 };
 
-function testIfAllDownloaded(results) {
+function testIfAllDownloaded(results, expected = 'downloaded') {
 	for (let log of results[0]) {
-		assert.equal(log[0], 'downloaded');
+		assert.equal(log[0], expected);
 	}
 }
 
@@ -45,6 +45,20 @@ describe('Twdl', function () {
 		return index.downloadUrls([tweets[2]], options).then((results) => {
 			testIfAllDownloaded(results);
 			assert.equal(results[0].length, 4, 'Media count should be 4');
+		});
+	});
+
+	it('should return with custom function', function () {
+		const notDownloaded = 'not downloaded';
+
+		function downloadUrl(mediaUrl, tweetUrl, mediaData, options) {
+			return [notDownloaded, mediaUrl];
+		}
+
+		let newOptions = Object.assign({ downloadUrlFn: downloadUrl }, options);
+
+		return index.downloadUrls([tweets[2]], newOptions).then(results => {
+			testIfAllDownloaded(results, notDownloaded);
 		});
 	});
 });
