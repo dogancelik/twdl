@@ -2,6 +2,7 @@ const assert = require('chai').assert;
 
 const index = require('../lib/index');
 const util = require('../lib/util');
+const { makeOptions } = require('../lib/options');
 
 const tweets = [
 	'https://twitter.com/Minecraft/status/1258774679675904000',
@@ -9,15 +10,7 @@ const tweets = [
 	'https://twitter.com/IGN/status/1271196450681167875'
 ];
 
-const options = {
-	avatar: false,
-	embed: false,
-	data: false,
-	overwrite: true,
-	format: util.DEFAULT_FORMAT,
-	date: false,
-	cookie: '',
-};
+const options = makeOptions();
 
 function testIfAllDownloaded(results, expected = 'downloaded') {
 	for (let log of results[0]) {
@@ -55,7 +48,7 @@ describe('Twdl', function () {
 			return [notDownloaded, mediaUrl];
 		}
 
-		let newOptions = Object.assign({ downloadUrlFn: downloadUrl }, options);
+		let newOptions = makeOptions({ downloadUrlFn: downloadUrl });
 
 		return index.downloadUrls([tweets[2]], newOptions).then(results => {
 			testIfAllDownloaded(results, notDownloaded);
