@@ -1,4 +1,7 @@
-[*.js]
+[*]
 insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.js]
 indent_style = tab
 tab_width = 2
