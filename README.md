@@ -3,9 +3,6 @@
 
 [![Build Status](https://travis-ci.com/dogancelik/twdl.svg?branch=master)](https://travis-ci.com/dogancelik/twdl)
 
-⚠ I don't plan to add support for anything else, that's not the goal of this tool.
-You can use [twitter-photos](https://github.com/shichao-an/twitter-photos) instead if you want download all images of accounts. ⚠
-
 ## Install
 
 You need [Node.js](https://nodejs.org/en/) (at least version 10) to use *twdl*.
@@ -23,3 +20,15 @@ twdl --help # show available options
 ```
 
 [See Wiki](https://github.com/dogancelik/twdl/wiki) for more examples.
+
+## Alternatives
+
+⚠ **twdl is a tool for downloading individual tweets only,**  
+if you want something more, check the alternatives below:
+
+| Repo | Last Update |
+| --- | --- |
+| [youtube-dl](https://github.com/ytdl-org/youtube-dl) | November 2020 |
+| [snscrape](https://github.com/JustAnotherArchivist/snscrape/) | November 2020 |
+| [GetOldTweets3](https://github.com/Mottl/GetOldTweets3/) | May 2020 |
+| [twitter-photos](https://github.com/shichao-an/twitter-photos) | March 2018 |

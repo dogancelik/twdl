@@ -5,3 +5,7 @@ trim_trailing_whitespace = true
 [*.js]
 indent_style = tab
 tab_width = 2
+
+[*.md]
+trim_trailing_whitespace = false
+end_of_line = unset
