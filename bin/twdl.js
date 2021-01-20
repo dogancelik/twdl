@@ -19,11 +19,11 @@ var urls = argv._;
 if (argv.list !== '') {
 	try {
 		// @ts-ignore
-		var text = fs.readFileSync(argv.list);
+		var text = fs.readFileSync(argv.list),
+			textArray = text.toString().trim().split('\n');
+		urls = urls.concat(textArray);
 	} catch (e) {
 		console.log(`${logSymbols.error} ${e.toString()}`);
-	} finally {
-		urls = urls.concat(text.toString().trim().split('\n'));
 	}
 }
 
