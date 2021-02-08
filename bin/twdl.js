@@ -42,6 +42,6 @@ lib.downloadUrls(urls, argv).catch(function (err) {
 	if (typeof v8debug === 'object') {
 		throw err;
 	}
-	console.error(`${logSymbols.error} Error occurred:`, err);
+	console.error(`${logSymbols.error} Error occurred:`, argv.g ? err : err.toString());
 	process.exit(2);
 });
