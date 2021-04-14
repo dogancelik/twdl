@@ -105,7 +105,7 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 	return ['downloaded', mediaUrl, tweetUrl];
 }
 
-export function downloadUrls(urls: string[], options: AllOptions) {
+export function downloadUrls(urls: string[], options: Partial<AllOptions>) {
 
 	let logFound = (length: number) => console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`),
 		downloadUrlFn = typeof options.downloadUrlFn === 'function' ? options.downloadUrlFn : downloadUrl;

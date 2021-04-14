@@ -99,7 +99,7 @@ export const CliOptions = {
 	}
 };
 
-export function makeOptions(newOptions) {
+export function makeOptions(newOptions: Partial<AllOptions>) {
 	let defaultOptions = {};
 	for (const [key, value] of Object.entries(CliOptions)) {
 		defaultOptions[key] = value.default;

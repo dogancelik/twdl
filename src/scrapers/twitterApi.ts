@@ -5,7 +5,7 @@ import cheerio = require('cheerio');
 import util = require('../util');
 import puppeteer = require('./puppeteer');
 import video = require('./video');
-import { CliOptions } from '../options';
+import { AllOptions } from '../options';
 
 // Credits to: https://github.com/Mottl/GetOldTweets3/
 // Also: https://github.com/JustAnotherArchivist/snscrape
@@ -42,7 +42,7 @@ export async function concatQuoteMedia(mediaData: util.MediaData) {
 	return mediaData;
 }
 
-export function getMedia(tweetUrl: string, options: CliOptions): Promise<util.MediaData> {
+export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<util.MediaData> {
 	let urlParsed = new URL(tweetUrl),
 		urlSplit = urlParsed.pathname.split('/'),
 		statusId = encodeURIComponent(urlSplit[3]),

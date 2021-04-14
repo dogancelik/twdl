@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Browser, LaunchOptions } from 'puppeteer/lib/cjs/puppeteer/api-docs-entry';
 import logSymbols = require('log-symbols');
-import { CliOptions } from '../options';
+import { AllOptions } from '../options';
 
 let _browser = null;
 
@@ -24,7 +24,7 @@ function getEnglishUrl(tweetUrl: string) {
 	return tweetUrl.split('?')[0] + '?lang=en';
 }
 
-export async function getMedia(tweetUrl: string, options: CliOptions) {
+export async function getMedia(tweetUrl: string, options: Partial<AllOptions>) {
 	let browser = await getBrowser();
 	const page = await browser.newPage();
 	await page.goto(getEnglishUrl(tweetUrl));
