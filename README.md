@@ -28,7 +28,8 @@ if you want something more, check the alternatives below:
 
 | Repo | Last Update |
 | --- | --- |
-| [youtube-dl](https://github.com/ytdl-org/youtube-dl) | November 2020 |
-| [snscrape](https://github.com/JustAnotherArchivist/snscrape/) | November 2020 |
+| [gallery-dl](https://github.com/mikf/gallery-dl) | April 2021 |
+| [youtube-dl](https://github.com/ytdl-org/youtube-dl) | April 2021 |
+| [snscrape](https://github.com/JustAnotherArchivist/snscrape/) | April 2021 |
 | [GetOldTweets3](https://github.com/Mottl/GetOldTweets3/) | May 2020 |
 | [twitter-photos](https://github.com/shichao-an/twitter-photos) | March 2018 |
