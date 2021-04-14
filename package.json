@@ -26,6 +26,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
+    "prepublishOnly": "npx rimraf out",
     "test": "mocha",
     "watch": "tsc --watch"
   },
