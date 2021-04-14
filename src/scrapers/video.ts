@@ -1,14 +1,13 @@
-const rp = require('request-promise');
+import rp = require('request-promise');
 
-const util = require('../util');
+import util = require('../util');
 
-function getVideo(tweetUrl) {
-	// @ts-ignore
+export function getVideo(tweetUrl: string): string {
 	return rp(util.getRequestConfig({
 		uri: 'https://www.savetweetvid.com/downloader',
 		method: 'POST',
 		form: { url: tweetUrl },
-	})).then(jq => {
+	})).then((jq: cheerio.Root) => {
 		if (jq('.alert-danger').text().indexOf('Uh-Oh!') > -1) {
 			return undefined;
 		}
@@ -16,5 +15,3 @@ function getVideo(tweetUrl) {
 		return jq('.dropbox-saver').attr('href');
 	});
 }
-
-exports.getVideo = getVideo;

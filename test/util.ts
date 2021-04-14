@@ -1,6 +1,7 @@
-const assert = require('chai').assert;
+import { assert } from 'chai';
 
-const util = require('../lib/util');
+import lib = require('../src/index');
+import * as util from '../src/util';
 
 const fake = {
 	tweet: 'https://twitter.com/Minecraft/status/1258774679675904000',

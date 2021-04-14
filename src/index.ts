@@ -1,24 +1,29 @@
-const Promise = require('bluebird');
-const fs = require('fs');
-const writeFile = Promise.promisify(fs.writeFile);
-const stat = Promise.promisify(fs.stat);
-const utimes = Promise.promisify(fs.utimes);
+import bluebird = require('bluebird');
+import fs = require('fs');
+const writeFile = bluebird.promisify(fs.writeFile);
+const stat = bluebird.promisify(fs.stat);
+const utimes = bluebird.promisify(fs.utimes);
 
-const path = require('path');
-const replaceExt = require('replace-ext');
-const mkdirp = require('mkdirp');
-const rp = require('request-promise');
+import path = require('path');
+import replaceExt = require('replace-ext');
+import mkdirp = require('mkdirp');
+import rp = require('request-promise');
 const exiftool = require('exiftool-vendored').exiftool;
-const logSymbols = require('log-symbols');
+import logSymbols = require('log-symbols');
 
-const util = require('./util');
-const { makeOptions } = require('./options');
-const id = require('./scrapers/id');
-const video = require('./scrapers/video');
-const puppeteer = require('./scrapers/puppeteer');
-const twitterApi = require('./scrapers/twitterApi');
+import * as util from './util';
+import id = require('./scrapers/id');
+import video = require('./scrapers/video');
+import puppeteer = require('./scrapers/puppeteer');
+import twitterApi = require('./scrapers/twitterApi');
 
-function downloadError(err) {
+import { AllOptions } from './options';
+export * from './options';
+
+import { ResponseAsJSON } from 'request';
+type RequestError = Error & ResponseAsJSON;
+
+function downloadError(err: RequestError) {
 	if (err.name === 'StatusCodeError') {
 		if (err.statusCode >= 400 && err.statusCode < 500) {
 			console.log(`${logSymbols.error} Tweet download has failed. Tweet is probably deleted.`, err.statusCode);
@@ -34,7 +39,7 @@ function downloadError(err) {
 
 const exifArgs = ['-overwrite_original'];
 
-async function downloadUrl(mediaUrl, tweetUrl, mediaData, options) {
+async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.MediaData, options: AllOptions) {
 	let parsedMedia = util.parseMediaUrl(mediaUrl);
 	let filename = util.renderFormat(options.format, parsedMedia, tweetUrl, mediaData);
 	let parsedPath = path.parse(filename);
@@ -64,7 +69,7 @@ async function downloadUrl(mediaUrl, tweetUrl, mediaData, options) {
 		console.log(`${logSymbols.error} Failed to download: ${parsedMedia.downloadUrl}`, err.toString());
 	}
 
-	let embedData;
+	let embedData: string;
 	if (options.embed || options.data || options.text) {
 		embedData = util.createEmbedData(tweetUrl, parsedMedia, mediaData, options);
 	}
@@ -100,26 +105,26 @@ async function downloadUrl(mediaUrl, tweetUrl, mediaData, options) {
 	return ['downloaded', mediaUrl, tweetUrl];
 }
 
-function downloadUrls(urls, options) {
+export function downloadUrls(urls: string[], options: AllOptions) {
 
-	let logFound = (length) => console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`),
+	let logFound = (length: number) => console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`),
 		downloadUrlFn = typeof options.downloadUrlFn === 'function' ? options.downloadUrlFn : downloadUrl;
 
-	function mapUrls(tweetUrl, index, length) {
+	function mapUrls(tweetUrl: string, index: number, length: number) {
 		tweetUrl = util.normalizeUrl(tweetUrl);
 		console.log(`${util.SEPERATOR}\n${logSymbols.info} (${index + 1} / ${length}) Parsing URL: ${tweetUrl}`);
-		return Promise.join(
+		return bluebird.join(
 			tweetUrl,
 			id.getId(tweetUrl),
 			twitterApi.getMedia(tweetUrl, options).then(twitterApi.concatQuoteMedia).catch(downloadError),
 			video.getVideo(tweetUrl),
-			joinResolved).then(function (results) {
+			joinResolved).then(function (results: any) {
 				console.log(`${logSymbols.success} Tweet download has finished.`);
 				return results;
 			});
 	}
 
-	function joinResolved(tweetUrl, userId, mediaData, videoUrl) {
+	function joinResolved(tweetUrl: string, userId: string, mediaData: util.MediaData, videoUrl: string) {
 		if (userId && mediaData.userId == null) {
 			mediaData.userId = userId;
 		}
@@ -139,14 +144,12 @@ function downloadUrls(urls, options) {
 		}
 		logFound(mediaCount);
 
-		return Promise
-			.all(mediaData.media.map((mediaUrl) => downloadUrlFn(mediaUrl, tweetUrl, mediaData, options)));
+		return bluebird
+			.all(mediaData.media.map((mediaUrl: string) => downloadUrlFn(mediaUrl, tweetUrl, mediaData, options)));
 	}
 
-	return Promise.mapSeries(urls, mapUrls).finally(() => {
+	return bluebird.mapSeries(urls, mapUrls).finally(() => {
 		exiftool.end(true);
 		puppeteer.cleanBrowser();
 	});
 }
-
-exports.downloadUrls = downloadUrls;

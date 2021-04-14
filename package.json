@@ -59,10 +59,15 @@
     }
   },
   "mocha": {
-    "timeout": 10000
+    "timeout": 10000,
+    "extension": ["ts"],
+    "require": "ts-node/register"
   },
   "devDependencies": {
+    "@types/cheerio": "^0.22.28",
     "@types/mocha": "^8.2.0",
+    "@types/puppeteer": "^5.4.3",
+    "@types/request": "^2.48.5",
     "chai": "^4.3.0",
     "mocha": "^8.2.1",
     "ts-node": "^9.1.1",

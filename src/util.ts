@@ -1,34 +1,36 @@
-const cheerio = require('cheerio');
-const url = require('url');
-const path = require('path');
-const mergeOptions = require('merge-options');
+import cheerio = require('cheerio');
+import url = require('url');
+import path = require('path');
+import mergeOptions = require('merge-options');
+import { CliOptions } from './options';
 
-const SEPERATOR = '------------';
+export const SEPERATOR = '------------';
 
-exports.SEPERATOR = SEPERATOR;
-
-function getStatusId(tweetUrl) {
+function getStatusId(tweetUrl: string) {
 	return tweetUrl.match(/status\/([0-9]+)/)[1];
 }
 
-function getUsername(tweetUrl) {
+export function getUsername(tweetUrl: string) {
 	return tweetUrl.match(/([a-zA-Z0-9_]+)\/status/)[1];
 }
 
-exports.getUsername = getUsername;
+export const DEFAULT_FORMAT = '#original#';
 
-const DEFAULT_FORMAT = '#original#';
+interface ParsedMedia {
+	original: string,
+	extension: string,
+	downloadUrl: string,
+	basename: string
+}
 
-exports.DEFAULT_FORMAT = DEFAULT_FORMAT;
-
-function parseMediaUrl(mediaUrl) {
+export function parseMediaUrl(mediaUrl: string) {
 	let parsed = url.parse(mediaUrl),
 		data = {
 			original: mediaUrl,
 			extension: null,
 			downloadUrl: parsed.href,
 			basename: path.basename(parsed.pathname)
-		};
+		} as ParsedMedia;
 
 	if (parsed.query !== null) {
 		try {
@@ -50,9 +52,7 @@ function parseMediaUrl(mediaUrl) {
 	return data;
 }
 
-exports.parseMediaUrl = parseMediaUrl;
-
-function renderFormat(formatStr, parsedMedia, tweetUrl, mediaData) {
+export function renderFormat(formatStr: string, parsedMedia: ParsedMedia, tweetUrl: string, mediaData: Partial<MediaData>) {
 	let extname = path.extname(parsedMedia.basename),
 		basename_noext = parsedMedia.basename.replace(extname, '');
 
@@ -63,9 +63,29 @@ function renderFormat(formatStr, parsedMedia, tweetUrl, mediaData) {
 		+ extname;
 }
 
-exports.renderFormat = renderFormat;
+export interface MediaData {
+	// Profile
+	name: string,
+	username: string,
+	userId: string,
+	avatar: string,
+	bio: string,
+	website: string,
+	location: string,
+	joined: string,
+	birthday: string,
+	// Tweet
+	text: string,
+	timestamp: number,
+	date: Date,
+	dateFormat: string,
+	isVideo: boolean,
+	media: string[],
+	quoteMedia: string[],
+	quoteRequest
+}
 
-function createEmbedData(tweetUrl, parsedMedia, mediaData, options) {
+export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMedia, mediaData: MediaData, options: CliOptions) {
 	let embedData = '';
 
 	if (options.embed || options.text) {
@@ -95,8 +115,6 @@ function createEmbedData(tweetUrl, parsedMedia, mediaData, options) {
 	return embedData.trim().replace(/\t*/g, '');
 }
 
-exports.createEmbedData = createEmbedData;
-
 const userAgents = [
 	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:63.0) Gecko/20100101 Firefox/63.0',
 	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:62.0) Gecko/20100101 Firefox/62.0',
@@ -108,26 +126,24 @@ const userAgents = [
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
 ];
 
-function getUserAgent(useCustom) {
-	return typeof useCustom === 'string' ? useCustom : userAgents[Math.floor(Math.random() * userAgents.length)];
+export function getUserAgent(useCustom?: string | boolean) {
+	return typeof useCustom === 'string' ?
+		useCustom :
+		userAgents[Math.floor(Math.random() * userAgents.length)];
 }
 
-exports.getUserAgent = getUserAgent;
+import { Options as RequestOptions, MultipartBody } from 'request';
 
-function getRequestConfig(config, includeHeaders = true) {
+export function getRequestConfig(config: RequestOptions, includeHeaders = true) {
 	let newConfig = mergeOptions({
 		headers: { 'User-Agent': getUserAgent() },
-		transform: (body) => cheerio.load(body),
+		transform: (body: any) => cheerio.load(body),
 		transform2xxOnly: true
 	}, config);
 
 	return newConfig;
 }
 
-exports.getRequestConfig = getRequestConfig;
-
-function normalizeUrl(url) {
+export function normalizeUrl(url: string) {
 	return url.replace(/^(http(s)?:\/\/)?/i, 'http$2://');
 }
-
-exports.normalizeUrl = normalizeUrl;

@@ -1,93 +1,109 @@
-const util = require('./util');
+import util = require('./util');
 
-const options = {
-	f: {
-		alias: 'format',
+export interface CliOptions {
+	format: string
+	list: string
+	avatar: boolean
+	quote: boolean
+	embed: boolean
+	data: string
+	text: boolean
+	overwrite: boolean
+	date: boolean
+	cookie: string
+	debug: boolean
+}
+
+export interface ModuleOptions {
+	downloadUrlFn: Function
+}
+
+export type AllOptions = CliOptions & ModuleOptions;
+
+export const CliOptions = {
+	format: {
+		alias: 'f',
 		default: util.DEFAULT_FORMAT,
 		describe: 'Set filename format',
 		type: 'string'
 	},
 
-	l: {
-		alias: 'list',
+	list: {
+		alias: 'l',
 		default: '',
 		describe: 'Load tweets from a file',
 		type: 'string'
 	},
 
-	a: {
-		alias: 'avatar',
+	avatar: {
+		alias: 'a',
 		default: false,
 		describe: 'Include profile image',
 		type: 'boolean'
 	},
 
-	u: {
-		alias: 'quote',
+	quote: {
+		alias: 'u',
 		default: false,
 		describe: 'Include images of quoted tweet',
 		type: 'boolean'
 	},
 
-	e: {
-		alias: 'embed',
+	embed: {
+		alias: 'e',
 		default: false,
 		describe: 'Embed tweet metadata in Comment',
 		type: 'boolean'
 	},
 
-	d: {
-		alias: 'data',
+	data: {
+		alias: 'd',
 		default: '',
 		describe: 'Embed additional data in Comment',
 		type: 'string'
 	},
 
-	x: {
-		alias: 'text',
+	text: {
+		alias: 'x',
 		default: false,
 		describe: 'Write tweet metadata as text file',
 		type: 'boolean'
 	},
 
-	o: {
-		alias: 'overwrite',
+	overwrite: {
+		alias: 'o',
 		default: false,
 		describe: 'Overwrite already existing file',
 		type: 'boolean'
 	},
 
-	t: {
-		alias: 'date',
+	date: {
+		alias: 't',
 		default: false,
 		describe: 'Replace file date with tweet date',
 		type: 'boolean'
 	},
 
-	k: {
-		alias: 'cookie',
+	cookie: {
+		alias: 'k',
 		default: '',
 		describe: 'Send cookie to Twitter',
 		type: 'string'
 	},
 
-	g: {
-		alias: 'debug',
+	debug: {
+		alias: 'g',
 		default: false,
 		describe: 'Enable verbose errors for debugging',
 		type: 'boolean'
 	}
 };
 
-exports.options = options;
-
-function makeOptions(newOptions) {
+export function makeOptions(newOptions) {
 	let defaultOptions = {};
-	for (const value of Object.values(options)) {
-		defaultOptions[value.alias] = value.default;
+	for (const [key, value] of Object.entries(CliOptions)) {
+		defaultOptions[key] = value.default;
 	}
 
 	return Object.assign(defaultOptions, newOptions);
 }
-
-exports.makeOptions = makeOptions;

@@ -1,8 +1,7 @@
-const assert = require('chai').assert;
+import { assert } from 'chai';
 
-const index = require('../lib/index');
-const util = require('../lib/util');
-const { makeOptions } = require('../lib/options');
+import lib = require('../src/index');
+import { makeOptions } from '../src/options';
 
 const tweets = [
 	'https://twitter.com/Minecraft/status/1258774679675904000',
@@ -10,7 +9,7 @@ const tweets = [
 	'https://twitter.com/IGN/status/1271196450681167875'
 ];
 
-function makeTestOptions(downloadUrlFn) {
+function makeTestOptions(downloadUrlFn?: Function) {
 	let options = makeOptions({ overwrite: true });
 	if (downloadUrlFn != null) options.downloadUrlFn = downloadUrlFn;
 	return options;
@@ -27,19 +26,19 @@ describe('Twdl', function () {
 	this.timeout(30000);
 
 	it('should find an image and download', async function () {
-		let results = await index.downloadUrls([tweets[0]], makeTestOptions());
+		let results = await lib.downloadUrls([tweets[0]], makeTestOptions());
 		testIfAllDownloaded(results);
 	});
 
 	it('should find a video and download', async function () {
-		let results = await index.downloadUrls([tweets[1]], makeTestOptions());
+		let results = await lib.downloadUrls([tweets[1]], makeTestOptions());
 		testIfAllDownloaded(results);
 		let videoUrl = results[0][0][1];
 		assert.match(videoUrl, /\.mp4/i, 'Media URL should be an mp4 video');
 	});
 
 	it('should find images and download', async function () {
-		let results = await index.downloadUrls([tweets[2]], makeTestOptions());
+		let results = await lib.downloadUrls([tweets[2]], makeTestOptions());
 		testIfAllDownloaded(results);
 		assert.equal(results[0].length, 4, 'Media count should be 4');
 	});
@@ -51,7 +50,7 @@ describe('Twdl', function () {
 			return [notDownloaded, mediaUrl];
 		}
 
-		let results = await index.downloadUrls([tweets[2]], makeTestOptions(downloadUrl));
+		let results = await lib.downloadUrls([tweets[2]], makeTestOptions(downloadUrl));
 		testIfAllDownloaded(results, notDownloaded);
 	});
 });

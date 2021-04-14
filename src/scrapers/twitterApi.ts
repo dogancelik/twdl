@@ -1,14 +1,16 @@
-const rp = require('request-promise');
-const cheerio = require('cheerio');
+import { Headers } from 'request';
+import rp = require('request-promise');
+import cheerio = require('cheerio');
 
-const util = require('../util');
-const puppeteer = require('./puppeteer');
-const video = require('./video');
+import util = require('../util');
+import puppeteer = require('./puppeteer');
+import video = require('./video');
+import { CliOptions } from '../options';
 
 // Credits to: https://github.com/Mottl/GetOldTweets3/
 // Also: https://github.com/JustAnotherArchivist/snscrape
 
-function buildHeaders(userAgent) {
+export function buildHeaders(userAgent: string): Headers {
 	if (userAgent == null) {
 		userAgent = util.getUserAgent();
 	}
@@ -19,9 +21,7 @@ function buildHeaders(userAgent) {
 	};
 }
 
-exports.buildHeaders = buildHeaders;
-
-function buildUrl(statusId, username, minPosition) {
+export function buildUrl(statusId: string, username: string, minPosition?: any) {
 	if (minPosition) {
 		return `https://twitter.com/i/${username}/conversation/${statusId}?include_available_features=1&include_entities=1&min_position=${minPosition}`
 	} else {
@@ -29,12 +29,10 @@ function buildUrl(statusId, username, minPosition) {
 	}
 }
 
-exports.buildUrl = buildUrl;
-
 const picTwitter = 'pic.twitter.com',
 	customUserAgent = 'Opera/9.80 (Windows NT 6.1; WOW64) Presto/2.12.388 Version/12.18 Bot';
 
-async function concatQuoteMedia(mediaData) {
+export async function concatQuoteMedia(mediaData: util.MediaData) {
 	if (mediaData.quoteRequest != null) {
 		let quoteMediaData = await mediaData.quoteRequest;
 		if (quoteMediaData !== false) {
@@ -44,9 +42,7 @@ async function concatQuoteMedia(mediaData) {
 	return mediaData;
 }
 
-exports.concatQuoteMedia = concatQuoteMedia;
-
-function getMedia(tweetUrl, options) {
+export function getMedia(tweetUrl: string, options: CliOptions): Promise<util.MediaData> {
 	let urlParsed = new URL(tweetUrl),
 		urlSplit = urlParsed.pathname.split('/'),
 		statusId = encodeURIComponent(urlSplit[3]),
@@ -60,13 +56,13 @@ function getMedia(tweetUrl, options) {
 	let requestConfig = util.getRequestConfig({ uri: pageUrl, headers: headers });
 
 	// @ts-ignore
-	return rp(requestConfig).then(jq => {
+	return rp(requestConfig).then((jq: cheerio.Root) => {
 		let tweetContainer = jq('.permalink-tweet-container').first(),
 			tweet = tweetContainer.find('.permalink-tweet').first(),
 			profileSidebar = jq('.ProfileSidebar').first(),
 			mediaContainer = jq('.AdaptiveMediaOuterContainer', tweetContainer).first();
 
-		if (tweetContainer.length === 0) return false;
+		if (tweetContainer.length === 0) throw new Error('Tweet is not found.');
 
 		// Profile related
 		let name = tweet.attr('data-name'),
@@ -96,7 +92,7 @@ function getMedia(tweetUrl, options) {
 		}
 
 		let quoteMedia = [],
-			quoteRequest;
+			quoteRequest: Promise<util.MediaData>;
 		if (options.quote) {
 			let quoteUrl = tweet.find('.twitter-timeline-link').first().attr('data-expanded-url');
 			if (quoteUrl) {
@@ -110,10 +106,8 @@ function getMedia(tweetUrl, options) {
 			text, timestamp, date, dateFormat,
 			isVideo, media, quoteMedia, quoteRequest
 		};
-	}, err => {
+	}, (err: Error) => {
 		// a temporary solution
 		return puppeteer.getMedia(tweetUrl, options);
 	});
 }
-
-exports.getMedia = getMedia;

@@ -1,28 +1,35 @@
-const rp = require('request-promise');
+import rp = require('request-promise');
 
-const util = require('../util');
+import util = require('../util');
 
-function getIdFail(username) {
+function getIdFail(username: string) {
 	let requestOptions = {
 		method: 'POST',
 		uri: 'https://tweeterid.com/ajax.php',
 		body: `input=${username}`
 	};
 
-	return rp(requestOptions).then(function (id) {
+	return rp(requestOptions).then(function (id: string) {
 		return id === 'error' ? undefined : id;
 	});
 }
 
-exports.getId = function getId(tweetUrl) {
+export function getId(tweetUrl: string): string {
 	let username = util.getUsername(tweetUrl),
 		url = `http://gettwitterid.com/?user_name=${username}&submit=GET+USER+ID`,
 		requestOptions = util.getRequestConfig({ uri: url });
 
 	// @ts-ignore
-	return rp(requestOptions).then(function (jq) {
-		let profileInfo = jq('.profile_info');
-		return profileInfo.length > 0 ? profileInfo.find('tr').first().find('td').last().text().trim() : undefined;
+	return rp(requestOptions).then(function (jq: cheerio.Root) {
+		let profileInfo = jq('.profile_info'),
+			userId = undefined;
+
+		if (profileInfo.length > 0) {
+			userId = profileInfo.find('tr').first().find('td').last().text().trim();
+			return userId;
+		}
+
+		return getIdFail(username);
 	}, function() {
 		return getIdFail(username);
 	});

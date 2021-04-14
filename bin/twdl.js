@@ -1,24 +1,18 @@
 #!/usr/bin/env node
 const logSymbols = require('log-symbols');
-const lib = require('../lib/index');
-const yargsOptions = require('../lib/options').options;
+const lib = require('../');
 const fs = require('fs');
 
 var yargs = require('yargs')
 	.usage('twdl [options] <URLs>')
-	.alias('h', 'help');
-
-for (let [key, val] of Object.entries(yargsOptions)) {
-	// @ts-ignore
-	yargs.option(key, val);
-}
+	.alias('h', 'help')
+	.options(lib.CliOptions);
 
 var argv = yargs.argv;
 
 var urls = argv._;
 if (argv.list !== '') {
 	try {
-		// @ts-ignore
 		var text = fs.readFileSync(argv.list),
 			textArray = text.toString().trim().split('\n');
 		urls = urls.concat(textArray);
@@ -38,10 +32,10 @@ if (process.env.TWDL_COOKIE != null && argv.cookie === '') {
 }
 
 lib.downloadUrls(urls, argv).catch(function (err) {
-	// @ts-ignore
-	if (typeof v8debug === 'object') {
+	if (argv.debug) {
 		throw err;
+	} else {
+		console.error(`${logSymbols.error} Error occurred:`, argv.g ? err : err.toString());
+		process.exit(2);
 	}
-	console.error(`${logSymbols.error} Error occurred:`, argv.g ? err : err.toString());
-	process.exit(2);
 });
