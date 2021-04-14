@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
@@ -24,8 +24,9 @@
     "twdl": "./bin/twdl.js"
   },
   "scripts": {
-    "test": "mocha",
     "build": "tsc",
+    "prepare": "npm run build",
+    "test": "mocha",
     "watch": "tsc --watch"
   },
   "dependencies": {
