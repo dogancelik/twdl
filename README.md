@@ -5,7 +5,7 @@
 
 ## Install
 
-You need [Node.js](https://nodejs.org/en/) (at least version 10) to use *twdl*.
+You need [Node.js](https://nodejs.org/en/) (at least version 14) to use *twdl*.
 You can also use `npx` (available with NPM 5+).
 
 ```sh

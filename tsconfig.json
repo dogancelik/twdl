@@ -1,8 +1,14 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
-		"moduleResolution": "node",
-		"esModuleInterop": true
+		"module": "CommonJS",
+		"moduleResolution": "Node",
+		"target": "ES2020",
+		"esModuleInterop": true,
+		"removeComments": true,
+		"declaration": true,
+		"sourceMap": true,
+		"rootDir": "src",
+		"outDir": "out"
 	},
 	"include": [
 		"src/**/*.ts"
