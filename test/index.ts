@@ -1,7 +1,9 @@
+import { describe, it } from 'mocha';
 import { assert } from 'chai';
+import { tmpdir } from 'os';
 
 import lib = require('../src/index');
-import { makeOptions } from '../src/options';
+import { AllOptions, makeOptions } from '../src/options';
 
 const tweets = [
 	'https://twitter.com/Minecraft/status/1258774679675904000',
@@ -9,8 +11,12 @@ const tweets = [
 	'https://twitter.com/IGN/status/1271196450681167875'
 ];
 
+const testDir = tmpdir();
 function makeTestOptions(downloadUrlFn?: Function) {
-	let options = makeOptions({ overwrite: true });
+	let options = makeOptions({
+		overwrite: true,
+		format: `${testDir}/#original#`
+	});
 	if (downloadUrlFn != null) options.downloadUrlFn = downloadUrlFn;
 	return options;
 }
