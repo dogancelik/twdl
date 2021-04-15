@@ -3,7 +3,7 @@ node_modules/
 *.jpg
 *.png
 *.mp4
+*.js.map
 
 src/
 test/
-*.js.map

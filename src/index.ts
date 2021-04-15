@@ -1,14 +1,11 @@
-import bluebird = require('bluebird');
-import fs = require('fs');
-const writeFile = bluebird.promisify(fs.writeFile);
-const stat = bluebird.promisify(fs.stat);
-const utimes = bluebird.promisify(fs.utimes);
+import { join, all, mapSeries } from 'bluebird';
+import { writeFile, stat, utimes } from 'fs/promises';
 
 import path = require('path');
 import replaceExt = require('replace-ext');
 import mkdirp = require('mkdirp');
 import rp = require('request-promise');
-const exiftool = require('exiftool-vendored').exiftool;
+import { exiftool } from 'exiftool-vendored';
 import logSymbols = require('log-symbols');
 
 import * as util from './util';
@@ -39,18 +36,31 @@ function downloadError(err: RequestError) {
 
 const exifArgs = ['-overwrite_original'];
 
-async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.MediaData, options: AllOptions) {
-	let parsedMedia = util.parseMediaUrl(mediaUrl);
-	let filename = util.renderFormat(options.format, parsedMedia, tweetUrl, mediaData);
-	let parsedPath = path.parse(filename);
+export interface DownloadStatus {
+	status: string,
+	mediaUrl: string,
+	tweetUrl: string,
+}
+
+async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.MediaData, options: Partial<AllOptions>) {
+	const parsedMedia = util.parseMediaUrl(mediaUrl),
+		filename = util.renderFormat(options.format, parsedMedia, tweetUrl, mediaData),
+		parsedPath = path.parse(filename),
+		downloadStatus: DownloadStatus = {
+			status: undefined,
+			mediaUrl: mediaUrl,
+			tweetUrl: tweetUrl,
+		};
 
 	try {
-		let stats = await stat(filename);
+		const stats = await stat(filename);
 		if (options.overwrite === false && stats !== null) {
 			console.log(`${logSymbols.warning} Skipped: '${parsedMedia.downloadUrl}' as '${filename}'`);
-			return ['skipped', mediaUrl, tweetUrl];
+			downloadStatus.status = 'skipped';
+			return downloadStatus;
 		}
 	} catch (err) {
+		//
 	}
 
 	if (parsedPath.dir) {
@@ -62,7 +72,7 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 	}
 
 	try {
-		let body = await rp({ uri: parsedMedia.downloadUrl, method: 'GET', encoding: null });
+		const body = await rp({ uri: parsedMedia.downloadUrl, method: 'GET', encoding: null });
 		await writeFile(filename, body);
 		console.log(`${logSymbols.success} Downloaded: '${parsedMedia.downloadUrl}' as '${filename}'`);
 	} catch (err) {
@@ -84,7 +94,7 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 	}
 
 	if (options.text) {
-		let textFile = replaceExt(filename, '.txt');
+		const textFile = replaceExt(filename, '.txt');
 		try {
 			await writeFile(textFile, embedData);
 			console.log(`${logSymbols.success} Metadata & data are written into '${textFile}'`);
@@ -102,26 +112,25 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 		}
 	}
 
-	return ['downloaded', mediaUrl, tweetUrl];
+	downloadStatus.status = 'downloaded';
+	return downloadStatus;
 }
 
-export function downloadUrls(urls: string[], options: Partial<AllOptions>) {
+type DownloadUrlsResult = Promise<Array<DownloadStatus[]>>;
 
-	let logFound = (length: number) => console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`),
+export function downloadUrls(urls: string[], options: Partial<AllOptions>): DownloadUrlsResult {
+	const logFound = (length: number) => console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`),
 		downloadUrlFn = typeof options.downloadUrlFn === 'function' ? options.downloadUrlFn : downloadUrl;
 
 	function mapUrls(tweetUrl: string, index: number, length: number) {
 		tweetUrl = util.normalizeUrl(tweetUrl);
 		console.log(`${util.SEPERATOR}\n${logSymbols.info} (${index + 1} / ${length}) Parsing URL: ${tweetUrl}`);
-		return bluebird.join(
+		return join(
 			tweetUrl,
 			id.getId(tweetUrl),
 			twitterApi.getMedia(tweetUrl, options).then(twitterApi.concatQuoteMedia).catch(downloadError),
 			video.getVideo(tweetUrl),
-			joinResolved).then(function (results: any) {
-				console.log(`${logSymbols.success} Tweet download has finished.`);
-				return results;
-			});
+			joinResolved);
 	}
 
 	function joinResolved(tweetUrl: string, userId: string, mediaData: util.MediaData, videoUrl: string) {
@@ -144,12 +153,16 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>) {
 		}
 		logFound(mediaCount);
 
-		return bluebird
-			.all(mediaData.media.map((mediaUrl: string) => downloadUrlFn(mediaUrl, tweetUrl, mediaData, options)));
+		return all(mediaData.media.map((mediaUrl) => downloadUrlFn(mediaUrl, tweetUrl, mediaData, options)))
+			.then(function (results: DownloadStatus[]) {
+				console.log(`${logSymbols.success} Tweet download has finished.`);
+				return results;
+			});
 	}
 
-	return bluebird.mapSeries(urls, mapUrls).finally(() => {
-		exiftool.end(true);
-		puppeteer.cleanBrowser();
-	});
+	return mapSeries(urls, mapUrls)
+		.finally(() => {
+			exiftool.end(true);
+			puppeteer.cleanBrowser();
+		});
 }

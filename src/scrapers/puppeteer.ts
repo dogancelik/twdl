@@ -2,10 +2,11 @@ import puppeteer from 'puppeteer';
 import { Browser, LaunchOptions } from 'puppeteer/lib/cjs/puppeteer/api-docs-entry';
 import logSymbols = require('log-symbols');
 import { AllOptions } from '../options';
+import { MediaData, noOp } from '../util';
 
 let _browser = null;
 
-export function cleanBrowser() {
+export function cleanBrowser(): Promise<null> {
 	return getBrowser().then((browser: Browser) => {
 		browser.close();
 		return _browser = null;
@@ -24,14 +25,16 @@ function getEnglishUrl(tweetUrl: string) {
 	return tweetUrl.split('?')[0] + '?lang=en';
 }
 
-export async function getMedia(tweetUrl: string, options: Partial<AllOptions>) {
-	let browser = await getBrowser();
+
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<MediaData> {
+	const browser = await getBrowser();
 	const page = await browser.newPage();
 	await page.goto(getEnglishUrl(tweetUrl));
 
 	// Tweet failed to load
 	page.waitForSelector('div[data-testid="primaryColumn"] > div > div > div > div > div + div[role="button"]')
-		.then((refreshElement) => refreshElement.click(), () => {});
+		.then((refreshElement) => refreshElement.click(), noOp);
 
 	let article = null;
 	try {
@@ -44,44 +47,44 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>) {
 
 	// View sensitive tweet
 	article.$('div[data-testid="tweet"]:not(.r-d0pm55) > div > div > div > div + div > div[role="button"]')
-		.then((viewButton) => viewButton && viewButton.click(), () => {});
+		.then((viewButton) => viewButton && viewButton.click(), noOp);
 
-	let source = await article.$('div[dir] > a[href*="#source-labels"]'), // Source app (e.g. Twitter for Android)
+	const source = await article.$('div[dir] > a[href*="#source-labels"]'), // Source app (e.g. Twitter for Android)
 		dateHandle = await page.evaluateHandle((e: HTMLElement) => e.previousElementSibling.previousElementSibling, source),
 		dateText = (await page.evaluate((e: HTMLElement) => e.innerText, dateHandle)).replace(' · ', ' '),
 		timestamp = Date.parse(dateText),
 		date = new Date(timestamp),
 		dateFormat = date.toISOString();
 
-	let nameParts = await article.$$('a[role="link"][data-focusable="true"] > div > div > div[dir]'),
+	const nameParts = await article.$$('a[role="link"][data-focusable="true"] > div > div > div[dir]'),
 		nameElement = nameParts[0],
 		name = await page.evaluate((e: HTMLElement) => e.innerText, nameElement),
 		usernameElement = nameParts[nameParts.length - 1],
-		username = await page.evaluate((e: { innerText: { replace: (arg0: string, arg1: string) => any; }; }) => e.innerText.replace('@', ''), usernameElement),
+		username = await page.evaluate((e: HTMLElement) => e.innerText.replace('@', ''), usernameElement),
 		userId = undefined;
 
 	// Tweet related
-	let textElement = await article.$('div[lang][dir]'),
-		text = '';
+	const textElement = await article.$('div[lang][dir]');
+	let text = '';
 	if (textElement != null) {
 		text = await page.evaluate((e: HTMLElement) => e.innerText, textElement);
 	}
 
-	let media = [],
-		quoteMedia = [],
+	let media = [];
+	const quoteMedia = [],
 		images = await article.$$('img[draggable="true"]'),
 		quoteImages = await article.$$('div[role="blockquote"] img[draggable="true"]'),
 		isVideo = await article.$$eval('img[draggable="false"]', (els: { length: number; }) => els.length === 1),
 		avatar = await page.evaluate((e: HTMLImageElement) => e.src.replace('_bigger', ''), images[0]);
 
 	// Remove the avatar
-	for (let img of images.slice(1)) {
-		let src = await page.evaluate((e: HTMLImageElement) => e.src, img);
+	for (const img of images.slice(1)) {
+		const src = await page.evaluate((e: HTMLImageElement) => e.src, img);
 		media.push(src);
 	}
 
-	for (let img of quoteImages) {
-		let src = await page.evaluate((e: HTMLImageElement) => e.src, img);
+	for (const img of quoteImages) {
+		const src = await page.evaluate((e: HTMLImageElement) => e.src, img);
 		quoteMedia.push(src);
 	}
 
@@ -91,9 +94,9 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>) {
 	});
 
 	// Scrape profile metadata after media
-	let profile = await article.$('a[role="link"][data-focusable="true"]');
+	const profile = await article.$('a[role="link"][data-focusable="true"]');
 	await profile.click();
-	let button = await page.$x("//div[@role='button' and contains(string(), 'Yes, view profile')]");
+	const button = await page.$x("//div[@role='button' and contains(string(), 'Yes, view profile')]");
 	if (button.length > 0) {
 		// Skip profile warning
 		await page.evaluate((el: HTMLElement) => el.click(), button[0]);
@@ -102,17 +105,17 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>) {
 
 	let bio = undefined;
 	try {
-		let bioElement = await page.$('div[data-testid="UserDescription"]');
+		const bioElement = await page.$('div[data-testid="UserDescription"]');
 		bio = await page.evaluate((e: HTMLElement) => e.innerText, bioElement);
 	} catch (err) {
 		console.error(`${logSymbols.warning} No bio detected`);
 	}
 
 	await page.waitForTimeout(500); // Birthday renders later
-	let headerItems = await page.$$eval('div[data-testid="UserProfileHeader_Items"] > *', (els: HTMLAnchorElement[]) => {
+	const headerItems = await page.$$eval('div[data-testid="UserProfileHeader_Items"] > *', (els: HTMLAnchorElement[]) => {
 		return els.map((e) => e.tagName === 'A' ? `${e.href} (${e.innerText})` : e.innerText);
-	}),
-		location = undefined,
+	});
+	let location = undefined,
 		website = undefined,
 		birthday = undefined,
 		joined = undefined;
@@ -133,6 +136,7 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>) {
 
 	await page.close();
 	return {
+		error: undefined,
 		name, username, userId, avatar,
 		bio, location, website, birthday, joined,
 		text, timestamp, date, dateFormat,

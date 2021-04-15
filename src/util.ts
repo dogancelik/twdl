@@ -2,7 +2,7 @@ import cheerio = require('cheerio');
 import url = require('url');
 import path = require('path');
 import mergeOptions = require('merge-options');
-import { CliOptions } from './options';
+import { AllOptions } from './options';
 
 export const SEPERATOR = '------------';
 
@@ -10,33 +10,34 @@ function getStatusId(tweetUrl: string) {
 	return tweetUrl.match(/status\/([0-9]+)/)[1];
 }
 
-export function getUsername(tweetUrl: string) {
+export function getUsername(tweetUrl: string): string {
 	return tweetUrl.match(/([a-zA-Z0-9_]+)\/status/)[1];
 }
 
 export const DEFAULT_FORMAT = '#original#';
 
-interface ParsedMedia {
+interface ParsedMediaUrl {
 	original: string,
 	extension: string,
 	downloadUrl: string,
 	basename: string
 }
 
-export function parseMediaUrl(mediaUrl: string) {
-	let parsed = url.parse(mediaUrl),
+export function parseMediaUrl(mediaUrl: string): ParsedMediaUrl {
+	const parsed = url.parse(mediaUrl),
 		data = {
 			original: mediaUrl,
 			extension: null,
 			downloadUrl: parsed.href,
 			basename: path.basename(parsed.pathname)
-		} as ParsedMedia;
+		} as ParsedMediaUrl;
 
 	if (parsed.query !== null) {
 		try {
 			data.extension = parsed.query.match(/format=([a-z]+)/)[1];
 			data.downloadUrl = parsed.href.split('?')[0];
 		} catch {
+			//
 		}
 	}
 
@@ -52,8 +53,9 @@ export function parseMediaUrl(mediaUrl: string) {
 	return data;
 }
 
-export function renderFormat(formatStr: string, parsedMedia: ParsedMedia, tweetUrl: string, mediaData: Partial<MediaData>) {
-	let extname = path.extname(parsedMedia.basename),
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+export function renderFormat(formatStr: string, parsedMedia: ParsedMediaUrl, tweetUrl: string, mediaData: Partial<MediaData>): string {
+	const extname = path.extname(parsedMedia.basename),
 		basename_noext = parsedMedia.basename.replace(extname, '');
 
 	return formatStr
@@ -64,6 +66,7 @@ export function renderFormat(formatStr: string, parsedMedia: ParsedMedia, tweetU
 }
 
 export interface MediaData {
+	error: Error;
 	// Profile
 	name: string,
 	username: string,
@@ -82,10 +85,10 @@ export interface MediaData {
 	isVideo: boolean,
 	media: string[],
 	quoteMedia: string[],
-	quoteRequest
+	quoteRequest?: Promise<MediaData>
 }
 
-export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMedia, mediaData: MediaData, options: CliOptions) {
+export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMediaUrl, mediaData: MediaData, options: Partial<AllOptions>): string {
 	let embedData = '';
 
 	if (options.embed || options.text) {
@@ -126,24 +129,28 @@ const userAgents = [
 	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
 ];
 
-export function getUserAgent(useCustom?: string | boolean) {
+export function getUserAgent(useCustom?: string | boolean): string {
 	return typeof useCustom === 'string' ?
 		useCustom :
 		userAgents[Math.floor(Math.random() * userAgents.length)];
 }
 
-import { Options as RequestOptions, MultipartBody } from 'request';
+import { Options as RequestOptions } from 'request';
 
-export function getRequestConfig(config: RequestOptions, includeHeaders = true) {
-	let newConfig = mergeOptions({
+export function getRequestConfig(config: RequestOptions): RequestOptions {
+	const newConfig = mergeOptions({
 		headers: { 'User-Agent': getUserAgent() },
-		transform: (body: any) => cheerio.load(body),
+		transform: (body: string | Buffer) => cheerio.load(body),
 		transform2xxOnly: true
 	}, config);
 
 	return newConfig;
 }
 
-export function normalizeUrl(url: string) {
+export function normalizeUrl(url: string): string {
 	return url.replace(/^(http(s)?:\/\/)?/i, 'http$2://');
+}
+
+export function noOp(): void {
+	//
 }

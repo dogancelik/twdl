@@ -1,4 +1,4 @@
-import util = require('./util');
+import { MediaData, DEFAULT_FORMAT } from './util';
 
 export interface CliOptions {
 	format: string
@@ -14,8 +14,16 @@ export interface CliOptions {
 	debug: boolean
 }
 
+export type DownloadUrlFuncReturn = {
+	status: string,
+	mediaUrl: string,
+	tweetUrl: string,
+};
+// eslint-disable-next-line no-unused-vars
+export type DownloadUrlFunc = (mediaUrl: string, tweetUrl: string, mediaData: MediaData, options: Partial<AllOptions>) => DownloadUrlFuncReturn;
+
 export interface ModuleOptions {
-	downloadUrlFn: Function
+	downloadUrlFn: DownloadUrlFunc
 }
 
 export type AllOptions = CliOptions & ModuleOptions;
@@ -23,7 +31,7 @@ export type AllOptions = CliOptions & ModuleOptions;
 export const CliOptions = {
 	format: {
 		alias: 'f',
-		default: util.DEFAULT_FORMAT,
+		default: DEFAULT_FORMAT,
 		describe: 'Set filename format',
 		type: 'string'
 	},
@@ -99,8 +107,8 @@ export const CliOptions = {
 	}
 };
 
-export function makeOptions(newOptions: Partial<AllOptions>) {
-	let defaultOptions = {};
+export function makeOptions(newOptions: Partial<AllOptions>): Partial<AllOptions> {
+	const defaultOptions = {};
 	for (const [key, value] of Object.entries(CliOptions)) {
 		defaultOptions[key] = value.default;
 	}

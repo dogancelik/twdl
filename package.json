@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
@@ -21,7 +21,7 @@
   },
   "main": "out/",
   "bin": {
-    "twdl": "./bin/twdl.js"
+    "twdl": "bin/twdl.js"
   },
   "scripts": {
     "build": "tsc",
@@ -38,26 +38,6 @@
     "request-promise": "^4.2.6",
     "yargs": "^16.2.0"
   },
-  "eslintConfig": {
-    "env": {
-      "es2020": true,
-      "node": true,
-      "mocha": true
-    },
-    "rules": {
-      "no-console": "off",
-      "no-empty": [
-        1,
-        {
-          "allowEmptyCatch": true
-        }
-      ],
-      "semi": [
-        2,
-        "always"
-      ]
-    }
-  },
   "mocha": {
     "timeout": 10000,
     "extension": [
@@ -66,12 +46,18 @@
     "require": "ts-node/register"
   },
   "devDependencies": {
+    "@types/bluebird": "^3.5.33",
+    "@types/chai": "^4.2.16",
     "@types/cheerio": "^0.22.28",
     "@types/mocha": "^8.2.2",
+    "@types/node": "^14.14.39",
     "@types/puppeteer": "^5.4.3",
     "@types/request": "^2.48.5",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
     "chai": "^4.3.4",
     "cheerio": "^1.0.0-rc.6",
+    "eslint": "^7.24.0",
     "exiftool-vendored": "^14.2.0",
     "log-symbols": "^4.1.0",
     "mocha": "^8.3.2",

@@ -3,7 +3,7 @@ import rp = require('request-promise');
 import util = require('../util');
 
 function getIdFail(username: string) {
-	let requestOptions = {
+	const requestOptions = {
 		method: 'POST',
 		uri: 'https://tweeterid.com/ajax.php',
 		body: `input=${username}`
@@ -15,14 +15,13 @@ function getIdFail(username: string) {
 }
 
 export function getId(tweetUrl: string): string {
-	let username = util.getUsername(tweetUrl),
+	const username = util.getUsername(tweetUrl),
 		url = `http://gettwitterid.com/?user_name=${username}&submit=GET+USER+ID`,
 		requestOptions = util.getRequestConfig({ uri: url });
 
-	// @ts-ignore
 	return rp(requestOptions).then(function (jq: cheerio.Root) {
-		let profileInfo = jq('.profile_info'),
-			userId = undefined;
+		const profileInfo = jq('.profile_info');
+		let userId = undefined;
 
 		if (profileInfo.length > 0) {
 			userId = profileInfo.find('tr').first().find('td').last().text().trim();
@@ -33,4 +32,4 @@ export function getId(tweetUrl: string): string {
 	}, function() {
 		return getIdFail(username);
 	});
-};
+}

@@ -1,6 +1,5 @@
 import { assert } from 'chai';
 
-import lib = require('../src/index');
 import * as util from '../src/util';
 
 const fake = {
@@ -15,7 +14,7 @@ const fake = {
 
 describe('Util', function () {
 	it('renderFormat should work', function (done) {
-		let format = util.renderFormat('#username#/#original#', fake.parsedMedia, fake.tweet, {});
+		const format = util.renderFormat('#username#/#original#', fake.parsedMedia, fake.tweet, {});
 		assert.equal(format, 'Minecraft/EXgQ5hJXgAAVPEP.jpg', 'Rendered filename is incorrect');
 		done();
 	});

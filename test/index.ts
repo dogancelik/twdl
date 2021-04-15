@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import { tmpdir } from 'os';
 
 import lib = require('../src/index');
-import { AllOptions, makeOptions } from '../src/options';
+import { DownloadUrlFunc, makeOptions } from '../src/options';
 
 const tweets = [
 	'https://twitter.com/Minecraft/status/1258774679675904000',
@@ -12,8 +12,8 @@ const tweets = [
 ];
 
 const testDir = tmpdir();
-function makeTestOptions(downloadUrlFn?: Function) {
-	let options = makeOptions({
+function makeTestOptions(downloadUrlFn?: DownloadUrlFunc) {
+	const options = makeOptions({
 		overwrite: true,
 		format: `${testDir}/#original#`
 	});
@@ -23,28 +23,26 @@ function makeTestOptions(downloadUrlFn?: Function) {
 
 
 function testIfAllDownloaded(results, expected = 'downloaded') {
-	for (let log of results[0]) {
-		assert.equal(log[0], expected);
-	}
+	assert.equal(results[0][0].status, expected);
 }
 
 describe('Twdl', function () {
 	this.timeout(30000);
 
 	it('should find an image and download', async function () {
-		let results = await lib.downloadUrls([tweets[0]], makeTestOptions());
+		const results = await lib.downloadUrls([tweets[0]], makeTestOptions());
 		testIfAllDownloaded(results);
 	});
 
 	it('should find a video and download', async function () {
-		let results = await lib.downloadUrls([tweets[1]], makeTestOptions());
+		const results = await lib.downloadUrls([tweets[1]], makeTestOptions());
 		testIfAllDownloaded(results);
-		let videoUrl = results[0][0][1];
+		const videoUrl = results[0][0].mediaUrl;
 		assert.match(videoUrl, /\.mp4/i, 'Media URL should be an mp4 video');
 	});
 
 	it('should find images and download', async function () {
-		let results = await lib.downloadUrls([tweets[2]], makeTestOptions());
+		const results = await lib.downloadUrls([tweets[2]], makeTestOptions());
 		testIfAllDownloaded(results);
 		assert.equal(results[0].length, 4, 'Media count should be 4');
 	});
@@ -52,11 +50,16 @@ describe('Twdl', function () {
 	it('should return with custom function', async function () {
 		const notDownloaded = 'not downloaded';
 
-		function downloadUrl(mediaUrl, tweetUrl, mediaData, options) {
-			return [notDownloaded, mediaUrl];
-		}
+		// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+		const myDownloadUrlFn: DownloadUrlFunc = (mediaUrl, tweetUrl, mediaData, options) => {
+			return {
+				status: notDownloaded,
+				mediaUrl,
+				tweetUrl,
+			};
+		};
 
-		let results = await lib.downloadUrls([tweets[2]], makeTestOptions(downloadUrl));
+		const results = await lib.downloadUrls([tweets[2]], makeTestOptions(myDownloadUrlFn));
 		testIfAllDownloaded(results, notDownloaded);
 	});
 });

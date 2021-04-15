@@ -3,6 +3,6 @@ node_modules/
 *.jpg
 *.png
 *.mp4
+*.js.map
 
 out/
-*.js.map
