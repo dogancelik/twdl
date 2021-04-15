@@ -1,19 +1,5 @@
 import { MediaData, DEFAULT_FORMAT } from './util';
 
-export interface CliOptions {
-	format: string
-	list: string
-	avatar: boolean
-	quote: boolean
-	embed: boolean
-	data: string
-	text: boolean
-	overwrite: boolean
-	date: boolean
-	cookie: string
-	debug: boolean
-}
-
 export type DownloadUrlFuncReturn = {
 	status: string,
 	mediaUrl: string,
@@ -26,16 +12,22 @@ export interface ModuleOptions {
 	downloadUrlFn: DownloadUrlFunc
 }
 
-export type AllOptions = CliOptions & ModuleOptions;
+export interface CliOptions {
+	list: string,
+	cookie: string,
+	debug: boolean,
+	format: string,
+	embed: boolean,
+	data: string,
+	text: boolean,
+	overwrite: boolean,
+	date: boolean,
+	avatar: boolean,
+	quote: boolean,
+	media: boolean,
+}
 
 export const CliOptions = {
-	format: {
-		alias: 'f',
-		default: DEFAULT_FORMAT,
-		describe: 'Set filename format',
-		type: 'string'
-	},
-
 	list: {
 		alias: 'l',
 		default: '',
@@ -43,18 +35,27 @@ export const CliOptions = {
 		type: 'string'
 	},
 
-	avatar: {
-		alias: 'a',
-		default: false,
-		describe: 'Include profile image',
-		type: 'boolean'
+	cookie: {
+		alias: 'k',
+		default: '',
+		describe: 'Send cookie to Twitter',
+		type: 'string'
 	},
 
-	quote: {
-		alias: 'u',
+	debug: {
+		alias: 'g',
 		default: false,
-		describe: 'Include images of quoted tweet',
+		describe: 'Enable verbose errors for debugging',
 		type: 'boolean'
+	},
+};
+
+export const DownloadOptions = {
+	format: {
+		alias: 'f',
+		default: DEFAULT_FORMAT,
+		describe: 'Set filename format',
+		type: 'string'
 	},
 
 	embed: {
@@ -91,21 +92,34 @@ export const CliOptions = {
 		describe: 'Replace file date with tweet date',
 		type: 'boolean'
 	},
+};
 
-	cookie: {
-		alias: 'k',
-		default: '',
-		describe: 'Send cookie to Twitter',
-		type: 'string'
+export const DownloadInfoOptions = {
+	avatar: {
+		alias: 'a',
+		default: false,
+		describe: 'Include profile image',
+		type: 'boolean'
 	},
 
-	debug: {
-		alias: 'g',
+	quote: {
+		alias: 'u',
 		default: false,
-		describe: 'Enable verbose errors for debugging',
+		describe: 'Include images of quoted tweet',
 		type: 'boolean'
-	}
+	},
 };
+
+export const InfoOptions = {
+	media: {
+		alias: 'm',
+		default: false,
+		describe: 'Show media URL(s) only',
+		type: 'boolean'
+	},
+}
+
+export type AllOptions = CliOptions & ModuleOptions;
 
 export function makeOptions(newOptions: Partial<AllOptions>): Partial<AllOptions> {
 	const defaultOptions = {};
