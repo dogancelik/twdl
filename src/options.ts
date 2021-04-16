@@ -13,6 +13,7 @@ export interface ModuleOptions {
 }
 
 export interface CliOptions {
+	urls: string[],
 	list: string,
 	cookie: string,
 	debug: boolean,

@@ -109,7 +109,7 @@ export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMediaUrl, m
 		---`;
 	}
 
-	if (options.data.length > 0) {
+	if (typeof options.data === 'string' && options.data.length > 0) {
 		embedData += `
 		Comment: ${options.data}
 		`;
