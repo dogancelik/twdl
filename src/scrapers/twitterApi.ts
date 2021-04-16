@@ -1,6 +1,4 @@
-import cheerio = require('cheerio');
-
-import { MediaData, getUserAgent, getRequest, GetRequestHeaders, newMediaData } from '../util';
+import { MediaData, getUserAgent, getRequest, GetRequestHeaders, newMediaData, getRequestConfig } from '../util';
 import puppeteer = require('./puppeteer');
 import { AllOptions } from '../options';
 
@@ -39,24 +37,32 @@ export async function concatQuoteMedia(mediaData: MediaData): Promise<MediaData>
 	return mediaData;
 }
 
-export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
+import { RequestError } from 'got';
+
+export function requestError(err: RequestError, tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
+	// a temporary solution
+	if (err.response.statusCode !== 404) {
+		return puppeteer.getMedia(tweetUrl, options);
+	} else {
+		throw err;
+	}
+}
+
+function parseTweetUrl(tweetUrl: string) {
 	const urlParsed = new URL(tweetUrl),
 		urlSplit = urlParsed.pathname.split('/'),
 		statusId = encodeURIComponent(urlSplit[3]),
 		username = encodeURIComponent(urlSplit[1]),
-		pageUrl = buildUrl(statusId, username),
-		headers = buildHeaders(customUserAgent);
+		pageUrl = buildUrl(statusId, username);
 
-	if (options.cookie.length > 0) {
-		headers.Cookie = options.cookie;
-	}
-	const request = getRequest({
-		uri: pageUrl,
-		cheerio: true,
-		headers: headers,
-	});
+	return { statusId, username, pageUrl };
+}
 
-	return request.then((jq: cheerio.Root) => {
+export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
+	const headers = buildHeaders(customUserAgent),
+		parsedTweetUrl = parseTweetUrl(tweetUrl);
+
+	function getMediaData(jq: cheerio.Root) {
 		const tweetContainer = jq('.permalink-tweet-container').first(),
 			tweet = tweetContainer.find('.permalink-tweet').first(),
 			profileSidebar = jq('.ProfileSidebar').first(),
@@ -103,9 +109,83 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promis
 		}
 
 		return mediaData;
-	// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-	}, (err: Error) => {
-		// a temporary solution
-		return puppeteer.getMedia(tweetUrl, options);
-	});
+	}
+
+	return getRequest({
+		uri: parsedTweetUrl.pageUrl,
+		cheerio: true,
+		headers: headers,
+	}, options).then(getMediaData, (err: RequestError) => requestError(err, tweetUrl, options));
+}
+
+export function getThreadSiblings(tweetUrl, options) {
+	const mediaData = newMediaData({ ancestors: undefined, descendants: undefined }),
+		parsedTweetUrl = parseTweetUrl(tweetUrl),
+		requestConfig = getRequestConfig({
+			uri: tweetUrl,
+			cheerio: true
+		}, options, customUserAgent);
+
+	function getSiblings(direction, parentJq, lastId?, collectedUrls = []) {
+		const idAttrName = 'data-item-id',
+			buildSiblingUrl = (jq, el) => buildUrl(jq(el).attr(idAttrName), parsedTweetUrl.username);
+
+		function getReplies(direction, jq) {
+			const replies = jq(`#${direction} .stream-item[data-item-id]`);
+			if (replies.length === 0) {
+				return [replies, false];
+			}
+
+			if (direction === 'ancestors') {
+				return [replies, replies.first().attr(idAttrName)];
+			} else {
+				return [replies, replies.last().attr(idAttrName)];
+			}
+		}
+
+		if (lastId === undefined) {
+			const replies = getReplies(direction, parentJq);
+			if (replies[1] === false) {
+				return false;
+			} else {
+				const replyUrls = replies[0].map((i, el) => buildSiblingUrl(parentJq, el)).get();
+				collectedUrls = collectedUrls.concat(replyUrls);
+				lastId = replies[1];
+			}
+		}
+
+		const siblingConfig = Object.assign({}, requestConfig);
+		siblingConfig.uri = buildUrl(lastId, parsedTweetUrl.username);
+		return getRequest(siblingConfig, options)
+			.then(function (jq) {
+				const [newReplies, newLastId] = getReplies(direction, jq);
+				if (newLastId === false) {
+					return collectedUrls;
+				} else {
+					const newUrls = newReplies.map((i, el) => buildSiblingUrl(jq, el)).get();
+					if (direction === 'ancestors') {
+						collectedUrls = newUrls.concat(collectedUrls);
+					} else {
+						collectedUrls = collectedUrls.concat(newUrls);
+					}
+					return getSiblings(direction, parentJq, newLastId, collectedUrls);
+				}
+			});
+	}
+
+	function parsePage(jq) {
+		const tweetContainer = jq('.permalink-tweet-container').first();
+		if (tweetContainer.length === 0) {
+			mediaData.error = new Error('Thread is not found.');
+			return mediaData;
+		}
+
+		mediaData.ancestors = getSiblings('ancestors', jq);
+		mediaData.descendants = getSiblings('descendants', jq);
+
+		return mediaData;
+	}
+
+	return getRequest(requestConfig, options)
+		.then(parsePage, (err: RequestError) => requestError(err, tweetUrl, options));
 }

@@ -86,7 +86,10 @@ export interface MediaData {
 	isVideo: boolean,
 	media: string[],
 	quoteMedia: string[],
-	quoteRequest?: Promise<MediaData>
+	quoteRequest?: Promise<MediaData>,
+	// Thread
+	ancestors: Promise<string[]>,
+	descendants: Promise<string[]>,
 }
 
 export function newMediaData(mediaData?: Partial<MediaData>): Partial<MediaData> {

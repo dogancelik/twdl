@@ -171,3 +171,13 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 			puppeteer.cleanBrowser();
 		});
 }
+
+export function getThreadUrls(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<util.MediaData>> {
+	return twitterApi
+		.getThreadSiblings(tweetUrl, options)
+		.then(async (mediaData) => {
+			mediaData.ancestors = await mediaData.ancestors as any;
+			mediaData.descendants = await mediaData.descendants as any;
+			return mediaData;
+		});
+}

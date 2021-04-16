@@ -17,9 +17,8 @@ export function loadUrls(argv) {
 }
 
 export function checkUrls(argv) {
-	if (Object.prototype.hasOwnProperty.call(argv, 'urls') === false ||
-		argv.urls.length === 0) {
-		console.error(`${logSymbols.error} No URL is provided. See 'twdl help'.`);
+	if (Array.isArray(argv.urls) === false || argv.urls.length === 0) {
+		console.error(`${logSymbols.error} No URL is provided. See 'twdl ${argv._[0]} --help'.`);
 		process.exit(1);
 	}
 }
