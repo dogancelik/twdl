@@ -2,7 +2,7 @@ import puppeteer from 'puppeteer';
 import { Browser, LaunchOptions } from 'puppeteer/lib/cjs/puppeteer/api-docs-entry';
 import logSymbols = require('log-symbols');
 import { AllOptions } from '../options';
-import { MediaData, noOp } from '../util';
+import { MediaData, newMediaData, noOp } from '../util';
 
 let _browser = null;
 
@@ -27,7 +27,7 @@ function getEnglishUrl(tweetUrl: string) {
 
 
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<MediaData> {
+export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	const browser = await getBrowser();
 	const page = await browser.newPage();
 	await page.goto(getEnglishUrl(tweetUrl));
@@ -49,38 +49,38 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 	article.$('div[data-testid="tweet"]:not(.r-d0pm55) > div > div > div > div + div > div[role="button"]')
 		.then((viewButton) => viewButton && viewButton.click(), noOp);
 
+	const mediaData = newMediaData();
 	const source = await article.$('div[dir] > a[href*="#source-labels"]'), // Source app (e.g. Twitter for Android)
 		dateHandle = await page.evaluateHandle((e: HTMLElement) => e.previousElementSibling.previousElementSibling, source),
-		dateText = (await page.evaluate((e: HTMLElement) => e.innerText, dateHandle)).replace(' · ', ' '),
-		timestamp = Date.parse(dateText),
-		date = new Date(timestamp),
-		dateFormat = date.toISOString();
+		dateText = (await page.evaluate((e: HTMLElement) => e.innerText, dateHandle)).replace(' · ', ' ');
+	mediaData.timestamp = Date.parse(dateText);
+	mediaData.date = new Date(mediaData.timestamp);
+	mediaData.dateFormat = mediaData.date.toISOString();
 
 	const nameParts = await article.$$('a[role="link"][data-focusable="true"] > div > div > div[dir]'),
 		nameElement = nameParts[0],
-		name = await page.evaluate((e: HTMLElement) => e.innerText, nameElement),
-		usernameElement = nameParts[nameParts.length - 1],
-		username = await page.evaluate((e: HTMLElement) => e.innerText.replace('@', ''), usernameElement),
-		userId = undefined;
+		usernameElement = nameParts[nameParts.length - 1];
+	mediaData.name = await page.evaluate((e: HTMLElement) => e.innerText, nameElement);
+	mediaData.username = await page.evaluate((e: HTMLElement) => e.innerText.replace('@', ''), usernameElement);
+	mediaData.userId = undefined;
 
 	// Tweet related
 	const textElement = await article.$('div[lang][dir]');
-	let text = '';
 	if (textElement != null) {
-		text = await page.evaluate((e: HTMLElement) => e.innerText, textElement);
+		mediaData.text = await page.evaluate((e: HTMLElement) => e.innerText, textElement);
 	}
 
-	let media = [];
+	mediaData.media = [];
 	const quoteMedia = [],
 		images = await article.$$('img[draggable="true"]'),
-		quoteImages = await article.$$('div[role="blockquote"] img[draggable="true"]'),
-		isVideo = await article.$$eval('img[draggable="false"]', (els: { length: number; }) => els.length === 1),
-		avatar = await page.evaluate((e: HTMLImageElement) => e.src.replace('_bigger', ''), images[0]);
+		quoteImages = await article.$$('div[role="blockquote"] img[draggable="true"]');
+	mediaData.isVideo = await article.$$eval('img[draggable="false"]', (els: { length: number; }) => els.length === 1);
+	mediaData.avatar = await page.evaluate((e: HTMLImageElement) => e.src.replace('_bigger', ''), images[0]);
 
 	// Remove the avatar
 	for (const img of images.slice(1)) {
 		const src = await page.evaluate((e: HTMLImageElement) => e.src, img);
-		media.push(src);
+		mediaData.media.push(src);
 	}
 
 	for (const img of quoteImages) {
@@ -89,7 +89,7 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 	}
 
 	// Remove quote images
-	media = media.filter(function (val: string) {
+	mediaData.media = mediaData.media.filter(function (val: string) {
 		return quoteMedia.indexOf(val) < 0;
 	});
 
@@ -103,10 +103,9 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 	}
 	await page.waitForSelector('nav[aria-label="Profile timelines"]');
 
-	let bio = undefined;
 	try {
 		const bioElement = await page.$('div[data-testid="UserDescription"]');
-		bio = await page.evaluate((e: HTMLElement) => e.innerText, bioElement);
+		mediaData.bio = await page.evaluate((e: HTMLElement) => e.innerText, bioElement);
 	} catch (err) {
 		console.error(`${logSymbols.warning} No bio detected`);
 	}
@@ -115,31 +114,21 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 	const headerItems = await page.$$eval('div[data-testid="UserProfileHeader_Items"] > *', (els: HTMLAnchorElement[]) => {
 		return els.map((e) => e.tagName === 'A' ? `${e.href} (${e.innerText})` : e.innerText);
 	});
-	let location = undefined,
-		website = undefined,
-		birthday = undefined,
-		joined = undefined;
 	headerItems.forEach((item: string) => {
 		if (item.startsWith('https:')) {
-			website = item;
+			mediaData.website = item;
 		}
 		else if (item.startsWith('Born')) {
-			birthday = item;
+			mediaData.birthday = item;
 		}
 		else if (item.startsWith('Joined')) {
-			joined = item;
+			mediaData.joined = item;
 		}
 		else {
-			location = item;
+			mediaData.location = item;
 		}
 	});
 
 	await page.close();
-	return {
-		error: undefined,
-		name, username, userId, avatar,
-		bio, location, website, birthday, joined,
-		text, timestamp, date, dateFormat,
-		isVideo, media, quoteMedia
-	};
+	return mediaData;
 }

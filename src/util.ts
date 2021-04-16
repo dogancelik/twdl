@@ -1,6 +1,5 @@
 /* eslint-disable no-unused-vars */
 import cheerio = require('cheerio');
-import got, { Options, Response, Headers } from 'got';
 import url = require('url');
 import path = require('path');
 import mergeOptions = require('merge-options');
@@ -90,6 +89,12 @@ export interface MediaData {
 	quoteRequest?: Promise<MediaData>
 }
 
+export function newMediaData(mediaData?: Partial<MediaData>): Partial<MediaData> {
+	return Object.assign({
+		error: false,
+	}, mediaData);
+}
+
 export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMediaUrl, mediaData: MediaData, options: Partial<AllOptions>): string {
 	let embedData = '';
 
@@ -137,44 +142,54 @@ export function getUserAgent(useCustom?: string | boolean): string {
 		userAgents[Math.floor(Math.random() * userAgents.length)];
 }
 
-function getRequestConfig(config: any) {
-	const uri = config.uri;
-	delete config.uri;
-
+export function getRequestConfig(config: any, options: Partial<AllOptions>, userAgent?: string) {
 	const newConfig = mergeOptions({
-		headers: { 'User-Agent': getUserAgent() }
+		headers: { 'User-Agent': getUserAgent(userAgent) }
 	}, config) as OptionsWithCheerio;
 
-	return [uri, newConfig];
+	if (typeof options !== 'undefined' &&
+		Object.prototype.hasOwnProperty.call(options, 'cookie') &&
+		options.cookie.length > 0) {
+		newConfig.headers.Cookie = options.cookie;
+	}
+
+	return newConfig;
 }
 
+import got, { CancelableRequest, Options, Response, Headers } from 'got';
+
+export type GetRequestHeaders = Headers;
 interface OptionsCommon {
 	uri: string,
 	headers?: GetRequestHeaders,
 	body?: string,
 }
+
 interface OptionsCheerio {
 	cheerio: true
 }
-export type GetRequestHeaders = Headers;
 export type OptionsWithUri = OptionsCommon & Options;
 export type OptionsWithCheerio = OptionsCommon & OptionsCheerio & Options;
 export type CheerioOrResponse = cheerio.Root | Response;
 
-export function getRequest(config: OptionsWithUri): Promise<string>;
-export function getRequest(config: OptionsWithCheerio): Promise<cheerio.Root>;
-export function getRequest(config: any): Promise<any> {
+export function getRequest(config: OptionsWithUri, options?: Partial<AllOptions>): Promise<any>;
+export function getRequest(config: OptionsWithCheerio, options?: Partial<AllOptions>): Promise<cheerio.Root>;
+export function getRequest(config: any, options?: Partial<AllOptions>): Promise<any> {
 	function transformCheerio(response: Response): CheerioOrResponse {
-		if (Object.prototype.hasOwnProperty.call(newConfig[1], 'cheerio') &&
-			newConfig[1].cheerio === true &&
+		if (Object.prototype.hasOwnProperty.call(newConfig, 'cheerio') &&
+			newConfig.cheerio === true &&
 			(response.statusCode >= 200 && response.statusCode < 300)) {
 			return cheerio.load(response.body as string);
 		}
 		return response;
 	}
 
-	const newConfig = getRequestConfig(config);
-	return got(newConfig[0], newConfig[1]).then(transformCheerio) as Promise<CheerioOrResponse>;
+	const newConfig = getRequestConfig(config, options);
+	const uri = newConfig.uri;
+	delete newConfig.uri;
+
+	const promise = got(uri, newConfig) as CancelableRequest<any>;
+	return promise.then(transformCheerio) as unknown as Promise<CheerioOrResponse>;
 }
 
 export function normalizeUrl(url: string): string {

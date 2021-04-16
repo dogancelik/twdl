@@ -1,6 +1,6 @@
 import cheerio = require('cheerio');
 
-import { MediaData, getUserAgent, getRequest, GetRequestHeaders } from '../util';
+import { MediaData, getUserAgent, getRequest, GetRequestHeaders, newMediaData } from '../util';
 import puppeteer = require('./puppeteer');
 import { AllOptions } from '../options';
 
@@ -60,54 +60,49 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promis
 		const tweetContainer = jq('.permalink-tweet-container').first(),
 			tweet = tweetContainer.find('.permalink-tweet').first(),
 			profileSidebar = jq('.ProfileSidebar').first(),
-			mediaContainer = jq('.AdaptiveMediaOuterContainer', tweetContainer).first();
+			mediaContainer = jq('.AdaptiveMediaOuterContainer', tweetContainer).first(),
+			mediaData = newMediaData();
 
 		if (tweetContainer.length === 0) {
-			return { error: new Error('Tweet is not found.') };
+			mediaData.error = new Error('Tweet is not found.');
+			return mediaData;
 		}
 
 		// Profile related
-		const name = tweet.attr('data-name'),
-			username = tweet.attr('data-screen-name'),
-			userId = tweet.attr('data-user-id'),
-			avatar = tweet.find('.js-action-profile-avatar').attr('src').replace('_bigger', ''),
-			bio = profileSidebar.find('.ProfileHeaderCard-bio').text().trim(),
-			website = profileSidebar.find('.ProfileHeaderCard-url').text().trim(),
-			location = profileSidebar.find('.ProfileHeaderCard-location').text().trim(),
-			joined = profileSidebar.find('.ProfileHeaderCard-joinDate').text().trim(),
-			birthday = profileSidebar.find('.ProfileHeaderCard-birthdate').text().trim(),
-			// Tweet related
-			isVideo = tweet.find('.AdaptiveMedia.is-video').length > 0,
-			text = tweet.find('.js-tweet-text-container').text().trim().replace(picTwitter, ' ' + picTwitter),
-			timestamp = parseInt(tweet.find('.tweet-timestamp ._timestamp').first().attr('data-time-ms'), 10),
-			date = new Date(timestamp),
-			dateFormat = date.toISOString(),
-			getImages = () => mediaContainer.find('.js-adaptive-photo')
+		mediaData.name = tweet.attr('data-name');
+		mediaData.username = tweet.attr('data-screen-name');
+		mediaData.userId = tweet.attr('data-user-id');
+		mediaData.avatar = tweet.find('.js-action-profile-avatar').attr('src').replace('_bigger', '');
+		mediaData.bio = profileSidebar.find('.ProfileHeaderCard-bio').text().trim();
+		mediaData.website = profileSidebar.find('.ProfileHeaderCard-url').text().trim();
+		mediaData.location = profileSidebar.find('.ProfileHeaderCard-location').text().trim();
+		mediaData.joined = profileSidebar.find('.ProfileHeaderCard-joinDate').text().trim();
+		mediaData.birthday = profileSidebar.find('.ProfileHeaderCard-birthdate').text().trim();
+		// Tweet related
+		mediaData.isVideo = tweet.find('.AdaptiveMedia.is-video').length > 0;
+		mediaData.text = tweet.find('.js-tweet-text-container').text().trim().replace(picTwitter, ' ' + picTwitter);
+		mediaData.timestamp = parseInt(tweet.find('.tweet-timestamp ._timestamp').first().attr('data-time-ms'), 10);
+		mediaData.date = new Date(mediaData.timestamp);
+		mediaData.dateFormat = mediaData.date.toISOString();
+		const getImages = () => mediaContainer.find('.js-adaptive-photo')
 				.map((i, el) => jq(el).attr('data-image-url'))
 				.get();
 
 		// Media URLs
-		let media = [];
-
-		if (!isVideo) {
-			media = getImages();
+		mediaData.media = [];
+		if (!mediaData.isVideo) {
+			mediaData.media = getImages();
 		}
 
-		const quoteMedia = [];
-		let quoteRequest: Promise<MediaData>;
+		mediaData.quoteMedia = [];
 		if (options.quote) {
 			const quoteUrl = tweet.find('.twitter-timeline-link').first().attr('data-expanded-url');
 			if (quoteUrl) {
-				quoteRequest = getMedia(quoteUrl, options).then(concatQuoteMedia);
+				mediaData.quoteRequest = getMedia(quoteUrl, options).then(concatQuoteMedia);
 			}
 		}
 
-		return {
-			name, username, userId, avatar,
-			bio, website, location, joined, birthday,
-			text, timestamp, date, dateFormat,
-			isVideo, media, quoteMedia, quoteRequest
-		};
+		return mediaData;
 	// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 	}, (err: Error) => {
 		// a temporary solution
