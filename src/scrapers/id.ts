@@ -1,25 +1,23 @@
-import rp = require('request-promise');
-
 import util = require('../util');
 
-function getIdFail(username: string) {
+function getIdFail(username: string): Promise<string> {
 	const requestOptions = {
 		method: 'POST',
 		uri: 'https://tweeterid.com/ajax.php',
 		body: `input=${username}`
 	};
 
-	return rp(requestOptions).then(function (id: string) {
+	return util.getRequest(requestOptions as any).then(function (id: string) {
 		return id === 'error' ? undefined : id;
 	});
 }
 
-export function getId(tweetUrl: string): string {
+export function getId(tweetUrl: string): Promise<string> {
 	const username = util.getUsername(tweetUrl),
 		url = `http://gettwitterid.com/?user_name=${username}&submit=GET+USER+ID`,
-		requestOptions = util.getRequestConfig({ uri: url });
+		request = util.getRequest({ uri: url, cheerio: true });
 
-	return rp(requestOptions).then(function (jq: cheerio.Root) {
+	return request.then(function (jq: cheerio.Root) {
 		const profileInfo = jq('.profile_info');
 		let userId = undefined;
 

@@ -1,15 +1,13 @@
-import { Headers } from 'request';
-import rp = require('request-promise');
 import cheerio = require('cheerio');
 
-import { MediaData, getUserAgent, getRequestConfig } from '../util';
+import { MediaData, getUserAgent, getRequest, GetRequestHeaders } from '../util';
 import puppeteer = require('./puppeteer');
 import { AllOptions } from '../options';
 
 // Credits to: https://github.com/Mottl/GetOldTweets3/
 // Also: https://github.com/JustAnotherArchivist/snscrape
 
-export function buildHeaders(userAgent: string): Headers {
+export function buildHeaders(userAgent: string): GetRequestHeaders {
 	if (userAgent == null) {
 		userAgent = getUserAgent();
 	}
@@ -41,7 +39,7 @@ export async function concatQuoteMedia(mediaData: MediaData): Promise<MediaData>
 	return mediaData;
 }
 
-export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<MediaData> {
+export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	const urlParsed = new URL(tweetUrl),
 		urlSplit = urlParsed.pathname.split('/'),
 		statusId = encodeURIComponent(urlSplit[3]),
@@ -52,9 +50,13 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promis
 	if (options.cookie.length > 0) {
 		headers.Cookie = options.cookie;
 	}
-	const requestConfig = getRequestConfig({ uri: pageUrl, headers: headers });
+	const request = getRequest({
+		uri: pageUrl,
+		cheerio: true,
+		headers: headers,
+	});
 
-	return rp(requestConfig).then((jq: cheerio.Root) => {
+	return request.then((jq: cheerio.Root) => {
 		const tweetContainer = jq('.permalink-tweet-container').first(),
 			tweet = tweetContainer.find('.permalink-tweet').first(),
 			profileSidebar = jq('.ProfileSidebar').first(),

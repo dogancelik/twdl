@@ -1,4 +1,6 @@
+/* eslint-disable no-unused-vars */
 import cheerio = require('cheerio');
+import got, { Options, Response, Headers } from 'got';
 import url = require('url');
 import path = require('path');
 import mergeOptions = require('merge-options');
@@ -135,16 +137,44 @@ export function getUserAgent(useCustom?: string | boolean): string {
 		userAgents[Math.floor(Math.random() * userAgents.length)];
 }
 
-import { Options as RequestOptions } from 'request';
+function getRequestConfig(config: any) {
+	const uri = config.uri;
+	delete config.uri;
 
-export function getRequestConfig(config: RequestOptions): RequestOptions {
 	const newConfig = mergeOptions({
-		headers: { 'User-Agent': getUserAgent() },
-		transform: (body: string | Buffer) => cheerio.load(body),
-		transform2xxOnly: true
-	}, config);
+		headers: { 'User-Agent': getUserAgent() }
+	}, config) as OptionsWithCheerio;
 
-	return newConfig;
+	return [uri, newConfig];
+}
+
+interface OptionsCommon {
+	uri: string,
+	headers?: GetRequestHeaders,
+	body?: string,
+}
+interface OptionsCheerio {
+	cheerio: true
+}
+export type GetRequestHeaders = Headers;
+export type OptionsWithUri = OptionsCommon & Options;
+export type OptionsWithCheerio = OptionsCommon & OptionsCheerio & Options;
+export type CheerioOrResponse = cheerio.Root | Response;
+
+export function getRequest(config: OptionsWithUri): Promise<string>;
+export function getRequest(config: OptionsWithCheerio): Promise<cheerio.Root>;
+export function getRequest(config: any): Promise<any> {
+	function transformCheerio(response: Response): CheerioOrResponse {
+		if (Object.prototype.hasOwnProperty.call(newConfig[1], 'cheerio') &&
+			newConfig[1].cheerio === true &&
+			(response.statusCode >= 200 && response.statusCode < 300)) {
+			return cheerio.load(response.body as string);
+		}
+		return response;
+	}
+
+	const newConfig = getRequestConfig(config);
+	return got(newConfig[0], newConfig[1]).then(transformCheerio) as Promise<CheerioOrResponse>;
 }
 
 export function normalizeUrl(url: string): string {

@@ -4,7 +4,7 @@ import { writeFile, stat, utimes } from 'fs/promises';
 import path = require('path');
 import replaceExt = require('replace-ext');
 import mkdirp = require('mkdirp');
-import rp = require('request-promise');
+import { getRequest } from './util';
 import { exiftool } from 'exiftool-vendored';
 import logSymbols = require('log-symbols');
 
@@ -17,8 +17,8 @@ import twitterApi = require('./scrapers/twitterApi');
 import { AllOptions } from './options';
 export * from './options';
 
-import { ResponseAsJSON } from 'request';
-type RequestError = Error & ResponseAsJSON;
+import { Response } from 'got';
+type RequestError = Error & Response;
 
 function downloadError(err: RequestError) {
 	if (err.name === 'StatusCodeError') {
@@ -72,7 +72,12 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 	}
 
 	try {
-		const body = await rp({ uri: parsedMedia.downloadUrl, method: 'GET', encoding: null });
+		const body = await getRequest({
+			method: 'GET',
+			uri: parsedMedia.downloadUrl,
+			responseType: 'buffer',
+			resolveBodyOnly: true,
+		}) as unknown as Buffer;
 		await writeFile(filename, body);
 		console.log(`${logSymbols.success} Downloaded: '${parsedMedia.downloadUrl}' as '${filename}'`);
 	} catch (err) {
