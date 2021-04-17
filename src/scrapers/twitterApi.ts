@@ -187,5 +187,5 @@ export function getThreadSiblings(tweetUrl, options) {
 	}
 
 	return getRequest(requestConfig, options)
-		.then(parsePage, (err: RequestError) => requestError(err, tweetUrl, options));
+		.then(parsePage, (err: RequestError) => { throw err; });
 }
