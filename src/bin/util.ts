@@ -1,7 +1,8 @@
 import logSymbols from 'log-symbols';
 import fs from 'fs';
+import { AllOptions } from '../options';
 
-export function loadUrls(argv) {
+export function loadUrls(argv: Partial<AllOptions>) {
 	let urls = argv.urls;
 	if (argv.list !== '') {
 		try {
@@ -16,18 +17,18 @@ export function loadUrls(argv) {
 	return urls;
 }
 
-export function checkUrls(argv) {
+export function checkUrls(argv: Partial<AllOptions>) {
 	if (Array.isArray(argv.urls) === false || argv.urls.length === 0) {
 		console.error(`${logSymbols.error} No URL is provided. See 'twdl ${argv._[0]} --help'.`);
 		process.exit(1);
 	}
 }
 
-export function reportUrls(argv) {
+export function reportUrls(argv: Partial<AllOptions>) {
 	console.error(`${logSymbols.info} Received ${argv.urls.length} URL(s).`);
 }
 
-export function applyCookie(argv) {
+export function applyCookie(argv: Partial<AllOptions>) {
 	if (process.env.TWDL_COOKIE != null && argv.cookie === '') {
 		argv.cookie = process.env.TWDL_COOKIE;
 	}

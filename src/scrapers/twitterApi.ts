@@ -41,7 +41,10 @@ import { RequestError } from 'got';
 
 export function requestError(err: RequestError, tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	// a temporary solution
-	if (err.response.statusCode !== 404) {
+	if (err.response.statusCode === 403 && options.cookie !== '') {
+		console.error('Page request failed because the provided Cookie is faulty.');
+		process.exit(3);
+	} else if (err.response.statusCode !== 404) {
 		return puppeteer.getMedia(tweetUrl, options);
 	} else {
 		throw err;
