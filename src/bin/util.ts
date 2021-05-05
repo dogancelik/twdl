@@ -3,7 +3,7 @@ import fs from 'fs';
 import { AllOptions } from '../options';
 
 export function loadUrls(argv: Partial<AllOptions>) {
-	let urls = argv.urls;
+	let urls = argv.urls ?? [];
 	if (argv.list !== '') {
 		try {
 			const text = fs.readFileSync(argv.list),
