@@ -22,13 +22,13 @@ import { Response } from 'got';
 type RequestError = Error & Response;
 
 function downloadError(err: RequestError) {
-	if (err.name === 'StatusCodeError') {
+	if (err.name === 'HTTPError') {
 		if (err.statusCode >= 400 && err.statusCode < 500) {
 			console.log(`${logSymbols.error} Tweet download has failed. Tweet is probably deleted.`, err.statusCode);
 		} else if (err.statusCode >= 500) {
 			console.log(`${logSymbols.error} Tweet download has failed. There is a technical issue.`, err.statusCode);
 		} else {
-			console.log(`${logSymbols.error} Tweet download has failed. Unknown error.`, err.statusCode);
+			console.log(`${logSymbols.error} Tweet download has failed. Unknown error.`, err.statusCode, err.message);
 		}
 	} else {
 		throw err;
@@ -135,11 +135,26 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 			tweetUrl,
 			id.getId(tweetUrl),
 			nitterApi.getMedia(tweetUrl, options).then(twitterApi.concatQuoteMedia).catch(downloadError),
+			nitterApi.getProfileBio(tweetUrl, options).catch(downloadError),
 			video.getVideo(tweetUrl),
 			joinResolved);
 	}
 
-	function joinResolved(tweetUrl: string, userId: string, mediaData: util.MediaData, videoUrl: string) {
+	function joinResolved(tweetUrl: string, userId: string, mediaData: util.MediaData, bioData: util.MediaData, videoUrl: string) {
+		if (!mediaData) throw new Error('No media data');
+		if (!bioData) console.log(`${logSymbols.warning} No bio data`);
+
+		if (bioData) {
+			if (bioData.bio)
+				mediaData.bio = bioData.bio;
+			if (bioData.website)
+				mediaData.website = bioData.website;
+			if (bioData.location)
+				mediaData.location = bioData.location;
+			if (bioData.joined)
+				mediaData.joined = bioData.joined;
+		}
+
 		if (userId && mediaData.userId == null) {
 			mediaData.userId = userId;
 		}

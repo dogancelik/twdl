@@ -73,7 +73,6 @@ export interface MediaData {
 	username: string,
 	userId: string,
 	avatar: string,
-	bioRequest: Promise<Partial<MediaData>>,
 	bio: string,
 	website: string,
 	location: string,
@@ -193,8 +192,13 @@ export function getRequest(config: any, options?: Partial<AllOptions>): Promise<
 	const useCheerio = newConfig.cheerio;
 	delete newConfig.cheerio;
 
-	const promise = got(uri, newConfig) as CancelableRequest<any>;
-	return promise.then(transformCheerio) as unknown as Promise<CheerioOrResponse>;
+	let promise = got(uri, newConfig) as CancelableRequest<any>;
+
+	if (useCheerio) {
+		promise = promise.then(transformCheerio) as any;
+	}
+
+	return promise as unknown as Promise<CheerioOrResponse>;
 }
 
 export function normalizeUrl(url: string): string {
