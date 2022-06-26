@@ -2,8 +2,8 @@ import { describe, it } from 'mocha';
 import { assert } from 'chai';
 import { tmpdir } from 'os';
 
-import lib = require('../src/index');
-import { DownloadUrlFunc, makeOptions } from '../src/options';
+import * as lib from '../src/index.js';
+import { DownloadUrlFunc, makeOptions } from '../src/options.js';
 
 const tweets = [
 	'https://twitter.com/Minecraft/status/1258774679675904000',

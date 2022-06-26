@@ -1,7 +1,7 @@
-import * as lib from '../../';
-import * as util from '../util';
+import * as lib from '../../index.js';
+import * as util from '../util.js';
 import mergeOptions from 'merge-options';
-import { AllOptions } from '../../options';
+import { AllOptions } from '../../options.js';
 
 export const command = 'download [urls..]';
 export const aliases = ['d'];
@@ -19,5 +19,6 @@ export function handler(argv: Partial<AllOptions>) {
 	util.reportUrls(argv);
 	util.applyCookie(argv);
 
-	lib.downloadUrls(argv.urls, argv).catch((err) => util.exitOnError(argv.debug, err));
+	return lib.downloadUrls(argv.urls, argv)
+		.catch((err) => util.exitOnError(argv.debug, err));
 }

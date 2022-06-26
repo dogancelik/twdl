@@ -1,4 +1,4 @@
-import { getRequest } from '../util';
+import { getRequest } from '../util.js';
 
 export function getVideo(tweetUrl: string): Promise<string> {
 	const promise = getRequest({

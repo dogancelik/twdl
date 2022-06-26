@@ -1,21 +1,22 @@
-import { join, all, mapSeries } from 'bluebird';
+import bluebird from 'bluebird';
+const { join, all, mapSeries } = bluebird;
 import { writeFile, stat, utimes } from 'fs/promises';
 
-import path = require('path');
-import replaceExt = require('replace-ext');
-import mkdirp = require('mkdirp');
-import { getRequest } from './util';
+import path from 'path';
+import replaceExt from 'replace-ext';
+import mkdirp from 'mkdirp';
 import { exiftool } from 'exiftool-vendored';
-import logSymbols = require('log-symbols');
+import logSymbols from 'log-symbols';
 
-import * as util from './util';
-import id = require('./scrapers/id');
-import video = require('./scrapers/video');
-import puppeteer = require('./scrapers/puppeteer');
-import twitterApi = require('./scrapers/twitterApi');
+import * as util from './util.js';
+import * as id from './scrapers/id.js';
+import * as video from './scrapers/video.js';
+import * as puppeteer from './scrapers/puppeteer.js';
+import * as twitterApi from './scrapers/twitterApi.js';
+import * as nitterApi from './scrapers/nitterApi.js';
 
-import { AllOptions } from './options';
-export * from './options';
+import { AllOptions } from './options.js';
+export * from './options.js';
 
 import { Response } from 'got';
 type RequestError = Error & Response;
@@ -72,7 +73,7 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 	}
 
 	try {
-		const body = await getRequest({
+		const body = await util.getRequest({
 			method: 'GET',
 			uri: parsedMedia.downloadUrl,
 			responseType: 'buffer',
@@ -133,7 +134,7 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		return join(
 			tweetUrl,
 			id.getId(tweetUrl),
-			twitterApi.getMedia(tweetUrl, options).then(twitterApi.concatQuoteMedia).catch(downloadError),
+			nitterApi.getMedia(tweetUrl, options).then(twitterApi.concatQuoteMedia).catch(downloadError),
 			video.getVideo(tweetUrl),
 			joinResolved);
 	}

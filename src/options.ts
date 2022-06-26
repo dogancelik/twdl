@@ -1,4 +1,5 @@
-import { MediaData, DEFAULT_FORMAT } from './util';
+import { InferredOptionTypes, Options } from 'yargs';
+import { MediaData, DEFAULT_FORMAT } from './util.js';
 
 export type DownloadUrlFuncReturn = {
 	status: string,
@@ -13,7 +14,7 @@ export interface ModuleOptions {
 }
 
 export interface CliOptions {
-	_: string,
+	_: string[],
 	urls: string[],
 	list: string,
 	cookie: string,
@@ -29,7 +30,13 @@ export interface CliOptions {
 	media: boolean,
 }
 
-export const CliOptions = {
+export type CliOptionTypes = InferredOptionTypes<{
+	list: Options;
+	cookie: Options;
+	debug: Options;
+}>;
+
+export const CliOptions: CliOptionTypes = {
 	list: {
 		alias: 'l',
 		default: '',
@@ -52,7 +59,16 @@ export const CliOptions = {
 	},
 };
 
-export const DownloadOptions = {
+export type DownloadOptionTypes = InferredOptionTypes<{
+	format: Options;
+	embed: Options;
+	data: Options;
+	text: Options;
+	overwrite: Options;
+	date: Options;
+}>;
+
+export const DownloadOptions: DownloadOptionTypes = {
 	format: {
 		alias: 'f',
 		default: DEFAULT_FORMAT,
@@ -96,7 +112,12 @@ export const DownloadOptions = {
 	},
 };
 
-export const DownloadInfoOptions = {
+export type DownloadInfoOptionTypes = InferredOptionTypes<{
+	avatar: Options;
+	quote: Options;
+}>;
+
+export const DownloadInfoOptions: DownloadInfoOptionTypes = {
 	avatar: {
 		alias: 'a',
 		default: false,
@@ -112,7 +133,11 @@ export const DownloadInfoOptions = {
 	},
 };
 
-export const InfoOptions = {
+export type InfoOptionTypes = InferredOptionTypes<{
+	media: Options;
+}>;
+
+export const InfoOptions: InfoOptionTypes = {
 	media: {
 		alias: 'm',
 		default: false,
@@ -125,7 +150,7 @@ export type AllOptions = CliOptions & ModuleOptions;
 
 export function makeOptions(newOptions: Partial<AllOptions>): Partial<AllOptions> {
 	const defaultOptions = {};
-	for (const [key, value] of Object.entries(CliOptions)) {
+	for (const [key, value] of Object.entries<Options>(CliOptions)) {
 		defaultOptions[key] = value.default;
 	}
 

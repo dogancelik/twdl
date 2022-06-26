@@ -1,8 +1,8 @@
 import puppeteer from 'puppeteer';
 import { Browser, LaunchOptions } from 'puppeteer/lib/cjs/puppeteer/api-docs-entry';
-import logSymbols = require('log-symbols');
-import { AllOptions } from '../options';
-import { MediaData, newMediaData, noOp } from '../util';
+import logSymbols from 'log-symbols';
+import { AllOptions } from '../options.js';
+import { MediaData, newMediaData, noOp } from '../util.js';
 
 let _browser = null;
 

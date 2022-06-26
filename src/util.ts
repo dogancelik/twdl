@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
-import cheerio = require('cheerio');
-import url = require('url');
-import path = require('path');
-import mergeOptions = require('merge-options');
-import { AllOptions } from './options';
+import cheerio from 'cheerio';
+import url from 'url';
+import path from 'path';
+import mergeOptions from 'merge-options';
+import { AllOptions } from './options.js';
 
 export const SEPERATOR = '------------';
 
@@ -42,7 +42,7 @@ export function parseMediaUrl(mediaUrl: string): ParsedMediaUrl {
 		}
 	}
 
-	if (data.extension !== null)  {
+	if (data.extension !== null) {
 		data.basename += '.' + data.extension;
 		data.downloadUrl += '.' + data.extension;
 	}
@@ -73,6 +73,7 @@ export interface MediaData {
 	username: string,
 	userId: string,
 	avatar: string,
+	bioRequest: Promise<Partial<MediaData>>,
 	bio: string,
 	website: string,
 	location: string,
@@ -159,7 +160,7 @@ export function getRequestConfig(config: any, options: Partial<AllOptions>, user
 	return newConfig;
 }
 
-import got, { CancelableRequest, Options, Response, Headers } from 'got';
+import { got, CancelableRequest, Options, Response, Headers } from 'got';
 
 export type GetRequestHeaders = Headers;
 interface OptionsCommon {
@@ -171,16 +172,15 @@ interface OptionsCommon {
 interface OptionsCheerio {
 	cheerio: true
 }
-export type OptionsWithUri = OptionsCommon & Options;
-export type OptionsWithCheerio = OptionsCommon & OptionsCheerio & Options;
+export type OptionsWithUri = OptionsCommon & Partial<Options>;
+export type OptionsWithCheerio = OptionsCommon & OptionsCheerio & Partial<Options>;
 export type CheerioOrResponse = cheerio.Root | Response;
 
 export function getRequest(config: OptionsWithUri, options?: Partial<AllOptions>): Promise<any>;
 export function getRequest(config: OptionsWithCheerio, options?: Partial<AllOptions>): Promise<cheerio.Root>;
 export function getRequest(config: any, options?: Partial<AllOptions>): Promise<any> {
 	function transformCheerio(response: Response): CheerioOrResponse {
-		if (Object.prototype.hasOwnProperty.call(newConfig, 'cheerio') &&
-			newConfig.cheerio === true &&
+		if (useCheerio &&
 			(response.statusCode >= 200 && response.statusCode < 300)) {
 			return cheerio.load(response.body as string);
 		}
@@ -190,6 +190,8 @@ export function getRequest(config: any, options?: Partial<AllOptions>): Promise<
 	const newConfig = getRequestConfig(config, options);
 	const uri = newConfig.uri;
 	delete newConfig.uri;
+	const useCheerio = newConfig.cheerio;
+	delete newConfig.cheerio;
 
 	const promise = got(uri, newConfig) as CancelableRequest<any>;
 	return promise.then(transformCheerio) as unknown as Promise<CheerioOrResponse>;

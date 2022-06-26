@@ -18,6 +18,11 @@ export function loadUrls(argv: Partial<AllOptions>) {
 }
 
 export function checkUrls(argv: Partial<AllOptions>) {
+	if (argv._.length > 1) {
+		const urls = argv._.slice(1);
+		argv.urls = urls;
+	}
+
 	if (Array.isArray(argv.urls) === false || argv.urls.length === 0) {
 		console.error(`${logSymbols.error} No URL is provided. See 'twdl ${argv._[0]} --help'.`);
 		process.exit(1);

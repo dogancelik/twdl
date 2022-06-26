@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "2.4.5",
+  "version": "2.5.0",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
@@ -17,8 +17,9 @@
     "downloader"
   ],
   "engines": {
-    "node": ">=10"
+    "node": ">=16"
   },
+  "type": "module",
   "main": "out/",
   "bin": {
     "twdl": "out/bin/twdl.js"
@@ -32,16 +33,17 @@
   },
   "dependencies": {
     "bluebird": "^3.7.2",
-    "chalk": "^4.1.0",
-    "cheerio": "^1.0.0-rc.6",
-    "exiftool-vendored": "^14.2.0",
-    "got": "^11.8.2",
-    "log-symbols": "^4.1.0",
+    "chalk": "^5.0.1",
+    "cheerio": "^1.0.0-rc.11",
+    "exiftool-vendored": "^16.4.0",
+    "got": "^12.1.0",
+    "log-symbols": "^5.1.0",
     "merge-options": "^3.0.4",
     "mkdirp": "^1.0.4",
-    "puppeteer": "^8.0.0",
+    "puppeteer": "^15.1.1",
     "replace-ext": "^2.0.0",
-    "yargs": "^16.2.0"
+    "tough-cookie": "^4.0.0",
+    "yargs": "^17.5.1"
   },
   "mocha": {
     "timeout": 10000,
@@ -51,19 +53,19 @@
     "require": "ts-node/register"
   },
   "devDependencies": {
-    "@types/bluebird": "^3.5.33",
-    "@types/chai": "^4.2.16",
-    "@types/cheerio": "^0.22.28",
-    "@types/mocha": "^8.2.2",
-    "@types/node": "^14.14.41",
-    "@types/puppeteer": "^5.4.3",
-    "@types/yargs": "^16.0.1",
-    "@typescript-eslint/eslint-plugin": "^4.22.0",
-    "@typescript-eslint/parser": "^4.22.0",
-    "chai": "^4.3.4",
-    "eslint": "^7.24.0",
-    "mocha": "^8.3.2",
-    "ts-node": "^9.1.1",
-    "typescript": "^4.2.4"
+    "@types/bluebird": "^3.5.36",
+    "@types/chai": "^4.3.1",
+    "@types/cheerio": "^0.22.31",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^18.0.0",
+    "@types/puppeteer": "^5.4.6",
+    "@types/yargs": "^17.0.10",
+    "@typescript-eslint/eslint-plugin": "^5.29.0",
+    "@typescript-eslint/parser": "^5.29.0",
+    "chai": "^4.3.6",
+    "eslint": "^8.18.0",
+    "mocha": "^10.0.0",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
   }
 }

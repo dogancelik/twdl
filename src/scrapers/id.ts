@@ -1,4 +1,5 @@
-import util = require('../util');
+import { CookieJar } from 'tough-cookie';
+import * as util from '../util.js';
 
 function getIdFail(username: string): Promise<string> {
 	const requestOptions = {
@@ -13,21 +14,38 @@ function getIdFail(username: string): Promise<string> {
 }
 
 export function getId(tweetUrl: string): Promise<string> {
-	const username = util.getUsername(tweetUrl),
-		url = `http://gettwitterid.com/?user_name=${username}&submit=GET+USER+ID`,
-		request = util.getRequest({ uri: url, cheerio: true });
+	function getCsrfToken() {
+		return util.getRequest({
+			method: 'GET',
+			uri: 'https://tools.codeofaninja.com/find-twitter-id',
+			cookieJar: cookieJar,
+			cheerio: true,
+		}).then(function (jq: cheerio.Root) {
+			const csrfToken = jq('meta[name="csrf-token"]');
+			return csrfToken.length > 0 ? csrfToken.attr('content') : undefined;
+		});
+	}
 
-	return request.then(function (jq: cheerio.Root) {
-		const profileInfo = jq('.profile_info');
-		let userId = undefined;
+	const username = util.getUsername(tweetUrl);
+	const cookieJar = new CookieJar();
 
-		if (profileInfo.length > 0) {
-			userId = profileInfo.find('tr').first().find('td').last().text().trim();
-			return userId;
+	return getCsrfToken().then(function (csrfToken: string) {
+		return util.getRequest({
+			method: 'POST',
+			uri: 'https://tools.codeofaninja.com/find-twitter-id-answer',
+			form: { _token: csrfToken, username: username },
+			cheerio: true,
+			cookieJar: cookieJar,
+		});
+	}).then(function (jq: cheerio.Root) {
+		const match = jq('div').text().match(/Twitter Numeric ID: ([0-9]+)/);
+		if (match) {
+			return match[1];
 		}
 
 		return getIdFail(username);
-	}, function() {
+	}, function(err) {
 		return getIdFail(username);
 	});
 }
+

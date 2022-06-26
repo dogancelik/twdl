@@ -1,8 +1,9 @@
-import * as lib from '../../';
-import * as util from '../util';
+import * as lib from '../../index.js';
+import * as util from '../util.js';
 import mergeOptions from 'merge-options';
-import { AllOptions } from '../../options';
+import { AllOptions } from '../../options.js';
 import chalk from 'chalk';
+import logSymbols from 'log-symbols';
 
 export const command = 'thread [urls]';
 export const aliases = ['t'];
@@ -13,13 +14,15 @@ export const builder = mergeOptions(
 );
 
 export function handler(argv: Partial<AllOptions>) {
+	return console.log(`${logSymbols.warning} The 'thread' command is disabled until further notice.`);
+
 	argv.urls = argv.urls && [].concat(argv.urls);
 	util.loadUrls(argv);
 	util.checkUrls(argv);
 	util.reportUrls(argv);
 	util.applyCookie(argv);
 
-	lib
+	return lib
 		.getThreadUrls(argv.urls[0], argv)
 		.then(mediaData => {
 			logSiblings('Ancestors', mediaData.ancestors as any as string[]);

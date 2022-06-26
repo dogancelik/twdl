@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import * as util from '../src/util';
+import * as util from '../src/util.js';
 
 const fake = {
 	tweet: 'https://twitter.com/Minecraft/status/1258774679675904000',

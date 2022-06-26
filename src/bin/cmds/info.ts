@@ -1,8 +1,8 @@
-import * as lib from '../../';
-import * as util from '../util';
+import * as lib from '../../index.js';
+import * as util from '../util.js';
 import mergeOptions from 'merge-options';
-import { AllOptions } from '../../options';
-import { createEmbedData, MediaData, parseMediaUrl, SEPERATOR } from '../../util';
+import { AllOptions } from '../../options.js';
+import { createEmbedData, MediaData, parseMediaUrl, SEPERATOR } from '../../util.js';
 
 export const command = 'info [urls..]';
 export const aliases = ['i'];
@@ -22,7 +22,8 @@ export function handler(argv: Partial<AllOptions>) {
 
 	argv.downloadUrlFn = argv.media ? printMediaOnly : printEmbedData;
 	argv.embed = true;
-	lib.downloadUrls(argv.urls, argv).catch((err) => util.exitOnError(argv.debug, err));
+	return lib.downloadUrls(argv.urls, argv)
+		.catch((err) => util.exitOnError(argv.debug, err));
 }
 
 function printMediaOnly(mediaUrl: string, tweetUrl: string) {

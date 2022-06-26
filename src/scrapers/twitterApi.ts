@@ -1,6 +1,7 @@
-import { MediaData, getUserAgent, getRequest, GetRequestHeaders, newMediaData, getRequestConfig } from '../util';
-import puppeteer = require('./puppeteer');
-import { AllOptions } from '../options';
+import { RequestError } from 'got';
+import { MediaData, getUserAgent, getRequest, GetRequestHeaders, newMediaData, getRequestConfig, OptionsWithCheerio } from '../util.js';
+import * as puppeteer from './puppeteer.js';
+import { AllOptions } from '../options.js';
 
 // Credits to: https://github.com/Mottl/GetOldTweets3/
 // Also: https://github.com/JustAnotherArchivist/snscrape
@@ -37,8 +38,6 @@ export async function concatQuoteMedia(mediaData: MediaData): Promise<MediaData>
 	return mediaData;
 }
 
-import { RequestError } from 'got';
-
 export function requestError(err: RequestError, tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	// a temporary solution
 	if (err.response.statusCode === 403 && options.cookie !== '') {
@@ -51,7 +50,7 @@ export function requestError(err: RequestError, tweetUrl: string, options: Parti
 	}
 }
 
-function parseTweetUrl(tweetUrl: string) {
+export function parseTweetUrl(tweetUrl: string) {
 	const urlParsed = new URL(tweetUrl),
 		urlSplit = urlParsed.pathname.split('/'),
 		statusId = encodeURIComponent(urlSplit[3]),
@@ -114,11 +113,14 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promis
 		return mediaData;
 	}
 
-	return getRequest({
+	const requestConfig: OptionsWithCheerio = {
 		uri: parsedTweetUrl.pageUrl,
 		cheerio: true,
 		headers: headers,
-	}, options).then(getMediaData, (err: RequestError) => requestError(err, tweetUrl, options));
+	};
+
+	return getRequest(requestConfig, options)
+		.then(getMediaData, (err: RequestError) => requestError(err, tweetUrl, options));
 }
 
 export function getThreadSiblings(tweetUrl, options) {
