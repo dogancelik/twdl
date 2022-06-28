@@ -20,5 +20,6 @@ export function handler(argv: Partial<AllOptions>) {
 	util.applyCookie(argv);
 
 	return lib.downloadUrls(argv.urls, argv)
-		.catch((err) => util.exitOnError(argv.debug, err));
+		.catch((err) => util.debugError(argv.debug, err))
+		.finally(util.exitWithCode);
 }

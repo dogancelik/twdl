@@ -8,49 +8,44 @@ import mkdirp from 'mkdirp';
 import { exiftool } from 'exiftool-vendored';
 import logSymbols from 'log-symbols';
 
+import * as api from './api.js';
 import * as util from './util.js';
 import * as id from './scrapers/id.js';
 import * as video from './scrapers/video.js';
 import * as puppeteer from './scrapers/puppeteer.js';
 import * as twitterApi from './scrapers/twitterApi.js';
-import * as nitterApi from './scrapers/nitterApi.js';
+import * as nitter from './scrapers/nitter.js';
 
 import { AllOptions } from './options.js';
 export * from './options.js';
 
-import { Response } from 'got';
-type RequestError = Error & Response;
-
-function downloadError(err: RequestError) {
-	if (err.name === 'HTTPError') {
-		if (err.statusCode >= 400 && err.statusCode < 500) {
-			console.log(`${logSymbols.error} Tweet download has failed. Tweet is probably deleted.`, err.statusCode);
-		} else if (err.statusCode >= 500) {
-			console.log(`${logSymbols.error} Tweet download has failed. There is a technical issue.`, err.statusCode);
-		} else {
-			console.log(`${logSymbols.error} Tweet download has failed. Unknown error.`, err.statusCode, err.message);
-		}
-	} else {
-		throw err;
-	}
-}
-
 const exifArgs = ['-overwrite_original'];
 
 export interface DownloadStatus {
-	status: string,
-	mediaUrl: string,
-	tweetUrl: string,
+	status: string;
+	errors: [string, Error][];
+	mediaUrl: string;
+	tweetUrl: string;
 }
 
-async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.MediaData, options: Partial<AllOptions>) {
+export enum DownloadStatusCode {
+	Downloaded = 'downloaded',
+	Skipped = 'skipped',
+	FailedDownload = 'failedDownload',
+	FailedEmbed = 'failedEmbed',
+	FailedText = 'failedText',
+	FailedDate = 'failedDate',
+}
+
+async function downloadUrl(mediaUrl: string, tweetData: util.TweetData, mediaData: util.MediaData, options: Partial<AllOptions>) {
 	const parsedMedia = util.parseMediaUrl(mediaUrl),
-		filename = util.renderFormat(options.format, parsedMedia, tweetUrl, mediaData),
+		filename = util.renderFormat(options.format, parsedMedia, tweetData, mediaData, options),
 		parsedPath = path.parse(filename),
 		downloadStatus: DownloadStatus = {
 			status: undefined,
 			mediaUrl: mediaUrl,
-			tweetUrl: tweetUrl,
+			tweetUrl: tweetData.finalUrl,
+			errors: [],
 		};
 
 	try {
@@ -73,21 +68,21 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 	}
 
 	try {
-		const body = await util.getRequest({
-			method: 'GET',
-			uri: parsedMedia.downloadUrl,
+		const body = await api.gotInstance.get(parsedMedia.downloadUrl, {
 			responseType: 'buffer',
 			resolveBodyOnly: true,
-		}) as unknown as Buffer;
+			timeout: { request: 60 * 1000 },
+		}) as Buffer;
 		await writeFile(filename, body);
 		console.log(`${logSymbols.success} Downloaded: '${parsedMedia.downloadUrl}' as '${filename}'`);
 	} catch (err) {
+		downloadStatus.errors.push([DownloadStatusCode.FailedDownload, err]);
 		console.log(`${logSymbols.error} Failed to download: ${parsedMedia.downloadUrl}`, err.toString());
 	}
 
 	let embedData: string;
 	if (options.embed || options.data || options.text) {
-		embedData = util.createEmbedData(tweetUrl, parsedMedia, mediaData, options);
+		embedData = util.createEmbedData(tweetData, parsedMedia, mediaData, options);
 	}
 
 	if (options.embed) {
@@ -95,6 +90,7 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 			await exiftool.write(filename, { Comment: embedData }, exifArgs);
 			console.log(`${logSymbols.success} Metadata & data are embedded into '${filename}'`);
 		} catch (err) {
+			downloadStatus.errors.push([DownloadStatusCode.FailedEmbed, err]);
 			console.log(`${logSymbols.error} Failed to embed metadata & data:`, err);
 		}
 	}
@@ -105,6 +101,7 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 			await writeFile(textFile, embedData);
 			console.log(`${logSymbols.success} Metadata & data are written into '${textFile}'`);
 		} catch (err) {
+			downloadStatus.errors.push([DownloadStatusCode.FailedText, err]);
 			console.log(`${logSymbols.error} Failed to write metadata:`, err);
 		}
 	}
@@ -114,11 +111,12 @@ async function downloadUrl(mediaUrl: string, tweetUrl: string, mediaData: util.M
 			await utimes(filename, new Date(Date.now()), mediaData.date);
 			console.log(`${logSymbols.success} Tweet date & time are set in '${filename}'`);
 		} catch (err) {
+			downloadStatus.errors.push([DownloadStatusCode.FailedDate, err]);
 			console.log(`${logSymbols.error} Failed to set date: ${err.toString()}`);
 		}
 	}
 
-	downloadStatus.status = 'downloaded';
+	downloadStatus.status = DownloadStatusCode.Downloaded;
 	return downloadStatus;
 }
 
@@ -129,30 +127,50 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		downloadUrlFn = typeof options.downloadUrlFn === 'function' ? options.downloadUrlFn : downloadUrl;
 
 	function mapUrls(tweetUrl: string, index: number, length: number) {
-		tweetUrl = util.normalizeUrl(tweetUrl);
+		const tweetUrlPromise = options.redirect ? api.getFinalUrl(tweetUrl) : util.normalizeUrl(tweetUrl),
+			tweetData = util.newTweetData({ originalUrl: tweetUrl });
 		console.log(`${util.SEPERATOR}\n${logSymbols.info} (${index + 1} / ${length}) Parsing URL: ${tweetUrl}`);
-		return join(
-			tweetUrl,
-			id.getId(tweetUrl),
-			nitterApi.getMedia(tweetUrl, options).then(twitterApi.concatQuoteMedia).catch(downloadError),
-			nitterApi.getProfileBio(tweetUrl, options).catch(downloadError),
-			video.getVideo(tweetUrl),
-			joinResolved);
+
+		function startParallel(finalUrl: util.TweetData['finalUrl']) {
+			tweetData.finalUrl = finalUrl;
+			Object.assign(tweetData, twitterApi.parseTweetUrl(tweetData, options));
+			return join(
+				tweetUrlPromise
+					.then(r => tweetData) // Send 'tweetData' instead of 'tweetUrl'
+					.catch(e => api.downloadError(e, api.RequestType.FinalUrl)),
+				id
+					.getId(tweetData)
+					.catch(e => api.downloadError(e, api.RequestType.GetId)),
+				nitter
+					.getMedia(tweetData, options)
+					.then(twitterApi.concatQuoteMedia)
+					.catch(e => api.downloadError(e, api.RequestType.NitterMedia)),
+				video
+					.getVideo(tweetData)
+					.catch(e => api.downloadError(e, api.RequestType.VideoUrl)),
+				joinResolved
+			);
+		}
+
+		return tweetUrlPromise.then(startParallel);
 	}
 
-	function joinResolved(tweetUrl: string, userId: string, mediaData: util.MediaData, bioData: util.MediaData, videoUrl: string) {
+	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData, videoUrl: string) {
 		if (!mediaData) throw new Error('No media data');
-		if (!bioData) console.log(`${logSymbols.warning} No bio data`);
 
-		if (bioData) {
-			if (bioData.bio)
-				mediaData.bio = bioData.bio;
-			if (bioData.website)
-				mediaData.website = bioData.website;
-			if (bioData.location)
-				mediaData.location = bioData.location;
-			if (bioData.joined)
-				mediaData.joined = bioData.joined;
+		if (mediaData.bioRequest && mediaData.bioRequest.then) {
+			mediaData.bioRequest.then((bioData: util.MediaData) => {
+				if (bioData.bio)
+					mediaData.bio = bioData.bio;
+				if (bioData.website)
+					mediaData.website = bioData.website;
+				if (bioData.location)
+					mediaData.location = bioData.location;
+				if (bioData.joined)
+					mediaData.joined = bioData.joined;
+			}).catch(e => {
+				console.log(`${logSymbols.warning} No bio data`);
+			});
 		}
 
 		if (userId && mediaData.userId == null) {
@@ -174,9 +192,17 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		}
 		logFound(mediaCount);
 
-		return all(mediaData.media.map((mediaUrl) => downloadUrlFn(mediaUrl, tweetUrl, mediaData, options)))
+		return all(
+			mediaData.media
+				.map((mediaUrl) => downloadUrlFn(mediaUrl, tweetData, mediaData, options))
+		)
 			.then(function (results: DownloadStatus[]) {
-				console.log(`${logSymbols.success} Tweet download has finished.`);
+				const anyErrors = results.some(result => result.errors.length > 0);
+				if (anyErrors) {
+					console.log(`${logSymbols.error} Tweet download has errors.`);
+				} else {
+					console.log(`${logSymbols.success} Tweet download has finished.`);
+				}
 				return results;
 			});
 	}
@@ -189,8 +215,10 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 }
 
 export function getThreadUrls(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<util.MediaData>> {
+	const tweetData = util.newTweetData({ originalUrl: tweetUrl });
+
 	return twitterApi
-		.getThreadSiblings(tweetUrl, options)
+		.getThreadSiblings(tweetData, options)
 		.then(async (mediaData) => {
 			mediaData.ancestors = await mediaData.ancestors as any;
 			mediaData.descendants = await mediaData.descendants as any;

@@ -6,6 +6,8 @@ import * as download from './cmds/download.js';
 import * as info from './cmds/info.js';
 import * as thread from './cmds/thread.js';
 
+global.processStatus = { exitCode: 0 };
+
 yargs(process.argv.slice(2))
 	.scriptName('twdl')
 	// .commandDir('cmds') // not supported, see issue #2152

@@ -17,6 +17,15 @@ export function loadUrls(argv: Partial<AllOptions>) {
 	return urls;
 }
 
+export interface ProcessStatus {
+	exitError?: Error;
+	exitCode: number;
+}
+
+declare module global {
+	const processStatus: ProcessStatus;
+}
+
 export function checkUrls(argv: Partial<AllOptions>) {
 	if (argv._.length > 1) {
 		const urls = argv._.slice(1);
@@ -25,7 +34,7 @@ export function checkUrls(argv: Partial<AllOptions>) {
 
 	if (Array.isArray(argv.urls) === false || argv.urls.length === 0) {
 		console.error(`${logSymbols.error} No URL is provided. See 'twdl ${argv._[0]} --help'.`);
-		process.exit(1);
+		global.processStatus.exitCode = 1;
 	}
 }
 
@@ -39,11 +48,18 @@ export function applyCookie(argv: Partial<AllOptions>) {
 	}
 }
 
-export function exitOnError(isDebug: boolean, err: Error) {
+export function debugError(isDebug: boolean, err: Error) {
 	if (isDebug) {
 		throw err;
 	} else {
-		console.error(`${logSymbols.error} Error occurred:`, isDebug ? err : err.toString());
-		process.exit(2);
+		console.error(`${logSymbols.error} Error occurred:`, err.toString());
+		global.processStatus.exitError = err;
+		global.processStatus.exitCode = 2;
+	}
+}
+
+export function exitWithCode() {
+	if (global.processStatus.exitCode) {
+		process.exit(global.processStatus.exitCode);
 	}
 }

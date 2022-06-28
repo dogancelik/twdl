@@ -1,14 +1,16 @@
+import logSymbols from 'log-symbols';
 import { RequestError } from 'got';
-import { MediaData, getUserAgent, getRequest, GetRequestHeaders, newMediaData, getRequestConfig, OptionsWithCheerio } from '../util.js';
+import * as util from '../util.js';
+import * as api from '../api.js';
 import * as puppeteer from './puppeteer.js';
 import { AllOptions } from '../options.js';
 
 // Credits to: https://github.com/Mottl/GetOldTweets3/
 // Also: https://github.com/JustAnotherArchivist/snscrape
 
-export function buildHeaders(userAgent: string): GetRequestHeaders {
+export function buildHeaders(userAgent: string): api.GetRequestHeaders {
 	if (userAgent == null) {
-		userAgent = getUserAgent();
+		userAgent = api.getUserAgent();
 	}
 
 	return {
@@ -21,14 +23,14 @@ export function buildUrl(statusId: string, username: string, minPosition?: strin
 	if (minPosition) {
 		return `https://twitter.com/i/${username}/conversation/${statusId}?include_available_features=1&include_entities=1&min_position=${minPosition}`
 	} else {
-		return `https://twitter.com/user/status/${statusId}`;
+		return `https://twitter.com/${username}/status/${statusId}`;
 	}
 }
 
 const picTwitter = 'pic.twitter.com',
 	customUserAgent = 'Opera/9.80 (Windows NT 6.1; WOW64) Presto/2.12.388 Version/12.18 Bot';
 
-export async function concatQuoteMedia(mediaData: MediaData): Promise<MediaData> {
+export async function concatQuoteMedia(mediaData: util.MediaData): Promise<util.MediaData> {
 	if (mediaData.quoteRequest != null) {
 		const quoteMediaData = await mediaData.quoteRequest;
 		if (quoteMediaData.error instanceof Error === false) {
@@ -38,11 +40,11 @@ export async function concatQuoteMedia(mediaData: MediaData): Promise<MediaData>
 	return mediaData;
 }
 
-export function requestError(err: RequestError, tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
+export function requestError(err: RequestError, tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<util.MediaData>> {
 	// a temporary solution
 	if (err.response.statusCode === 403 && options.cookie !== '') {
-		console.error('Page request failed because the provided Cookie is faulty.');
-		process.exit(3);
+		console.error(`${logSymbols.error} Page request failed because the provided Cookie is faulty.`);
+		global.processStatus.exitCode = 3;
 	} else if (err.response.statusCode !== 404) {
 		return puppeteer.getMedia(tweetUrl, options);
 	} else {
@@ -50,26 +52,26 @@ export function requestError(err: RequestError, tweetUrl: string, options: Parti
 	}
 }
 
-export function parseTweetUrl(tweetUrl: string) {
-	const urlParsed = new URL(tweetUrl),
+export function parseTweetUrl(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>) {
+	const urlParsed = new URL(options.redirect ? tweetData.finalUrl : tweetData.originalUrl),
 		urlSplit = urlParsed.pathname.split('/'),
 		statusId = encodeURIComponent(urlSplit[3]),
 		username = encodeURIComponent(urlSplit[1]),
-		pageUrl = buildUrl(statusId, username);
+		permalink = buildUrl(statusId, username);
 
-	return { statusId, username, pageUrl };
+	return { statusId, username, permalink };
 }
 
-export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
+export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>): Promise<Partial<util.MediaData>> {
 	const headers = buildHeaders(customUserAgent),
-		parsedTweetUrl = parseTweetUrl(tweetUrl);
+		parsedTweetUrl = parseTweetUrl(tweetData, options);
 
 	function getMediaData(jq: cheerio.Root) {
 		const tweetContainer = jq('.permalink-tweet-container').first(),
 			tweet = tweetContainer.find('.permalink-tweet').first(),
 			profileSidebar = jq('.ProfileSidebar').first(),
 			mediaContainer = jq('.AdaptiveMediaOuterContainer', tweetContainer).first(),
-			mediaData = newMediaData();
+			mediaData = util.newMediaData();
 
 		if (tweetContainer.length === 0) {
 			mediaData.error = new Error('Tweet is not found.');
@@ -93,8 +95,8 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promis
 		mediaData.date = new Date(mediaData.timestamp);
 		mediaData.dateFormat = mediaData.date.toISOString();
 		const getImages = () => mediaContainer.find('.js-adaptive-photo')
-				.map((i, el) => jq(el).attr('data-image-url'))
-				.get();
+			.map((i, el) => jq(el).attr('data-image-url'))
+			.get();
 
 		// Media URLs
 		mediaData.media = [];
@@ -106,28 +108,34 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promis
 		if (options.quote) {
 			const quoteUrl = tweet.find('.twitter-timeline-link').first().attr('data-expanded-url');
 			if (quoteUrl) {
-				mediaData.quoteRequest = getMedia(quoteUrl, options).then(concatQuoteMedia);
+				const quoteTweetData = util.newTweetData({
+					originalUrl: quoteUrl,
+					finalUrl: quoteUrl,
+				});
+				mediaData.quoteRequest = getMedia(quoteTweetData, options).then(concatQuoteMedia);
 			}
 		}
 
 		return mediaData;
 	}
 
-	const requestConfig: OptionsWithCheerio = {
-		uri: parsedTweetUrl.pageUrl,
+	const requestConfig: api.OptionsWithCheerio = {
+		uri: parsedTweetUrl.permalink,
 		cheerio: true,
 		headers: headers,
 	};
 
-	return getRequest(requestConfig, options)
-		.then(getMediaData, (err: RequestError) => requestError(err, tweetUrl, options));
+	return api.gotInstance
+		.get(requestConfig.uri, { headers: requestConfig.headers })
+		.then(api.loadCheerio)
+		.then(getMediaData, (err: RequestError) => requestError(err, tweetData.originalUrl, options));
 }
 
-export function getThreadSiblings(tweetUrl, options) {
-	const mediaData = newMediaData({ ancestors: undefined, descendants: undefined }),
-		parsedTweetUrl = parseTweetUrl(tweetUrl),
-		requestConfig = getRequestConfig({
-			uri: tweetUrl,
+export function getThreadSiblings(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>) {
+	const mediaData = util.newMediaData({ ancestors: undefined, descendants: undefined }),
+		parsedTweetUrl = parseTweetUrl(tweetData, options),
+		requestConfig = api.getRequestConfig({
+			uri: tweetData.originalUrl,
 			cheerio: true
 		}, options, customUserAgent);
 
@@ -161,8 +169,10 @@ export function getThreadSiblings(tweetUrl, options) {
 
 		const siblingConfig = Object.assign({}, requestConfig);
 		siblingConfig.uri = buildUrl(lastId, parsedTweetUrl.username);
-		return getRequest(siblingConfig, options)
-			.then(function (jq) {
+		return api.gotInstance
+			.get(siblingConfig.uri, { headers: siblingConfig.headers })
+			.then(api.loadCheerio)
+			.then(function (jq: cheerio.Root) {
 				const [newReplies, newLastId] = getReplies(direction, jq);
 				if (newLastId === false) {
 					return collectedUrls;
@@ -178,7 +188,7 @@ export function getThreadSiblings(tweetUrl, options) {
 			});
 	}
 
-	function parsePage(jq) {
+	function parsePage(jq: cheerio.Root) {
 		const tweetContainer = jq('.permalink-tweet-container').first();
 		if (tweetContainer.length === 0) {
 			mediaData.error = new Error('Thread is not found.');
@@ -191,6 +201,8 @@ export function getThreadSiblings(tweetUrl, options) {
 		return mediaData;
 	}
 
-	return getRequest(requestConfig, options)
+	return api.gotInstance
+		.get(tweetData.originalUrl, { headers: { 'Cookie': options.cookie } })
+		.then(api.loadCheerio)
 		.then(parsePage, (err: RequestError) => { throw err; });
 }

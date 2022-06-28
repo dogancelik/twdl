@@ -28,7 +28,8 @@ export function handler(argv: Partial<AllOptions>) {
 			logSiblings('Ancestors', mediaData.ancestors as any as string[]);
 			logSiblings('Descendants', mediaData.descendants as any as string[]);
 		})
-		.catch((err) => util.exitOnError(argv.debug, err));
+		.catch((err) => util.debugError(argv.debug, err))
+		.finally(util.exitWithCode);
 }
 
 function logSiblings(label: string, siblings: string[], bullet: string = '\n') {

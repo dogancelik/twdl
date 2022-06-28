@@ -1,8 +1,6 @@
 /* eslint-disable no-unused-vars */
-import cheerio from 'cheerio';
 import url from 'url';
 import path from 'path';
-import mergeOptions from 'merge-options';
 import { AllOptions } from './options.js';
 
 export const SEPERATOR = '------------';
@@ -11,13 +9,19 @@ function getStatusId(tweetUrl: string) {
 	return tweetUrl.match(/status\/([0-9]+)/)[1];
 }
 
-export function getUsername(tweetUrl: string): string {
-	return tweetUrl.match(/([a-zA-Z0-9_]+)\/status/)[1];
+export function getUsername(tweetUrl: string, options?: Partial<AllOptions>, mediaData?: Partial<MediaData>): string {
+	const usernameRegex = /([a-zA-Z0-9_]+)\/status/;
+
+	if (mediaData?.finalUrl && options?.redirect) {
+		return mediaData.username;
+	}
+
+	return tweetUrl.match(usernameRegex)[1];
 }
 
 export const DEFAULT_FORMAT = '#original#';
 
-interface ParsedMediaUrl {
+export interface ParsedMediaUrl {
 	original: string,
 	extension: string,
 	downloadUrl: string,
@@ -55,41 +59,50 @@ export function parseMediaUrl(mediaUrl: string): ParsedMediaUrl {
 }
 
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-export function renderFormat(formatStr: string, parsedMedia: ParsedMediaUrl, tweetUrl: string, mediaData: Partial<MediaData>): string {
+export function renderFormat(
+	formatStr: string,
+	parsedMedia: ParsedMediaUrl,
+	tweetData: TweetData,
+	mediaData: Partial<MediaData>,
+	options: Partial<AllOptions>
+): string {
 	const extname = path.extname(parsedMedia.basename),
 		basename_noext = parsedMedia.basename.replace(extname, '');
 
 	return formatStr
-		.replace(/#tweet_id#/gi, getStatusId(tweetUrl))
+		.replace(/#tweet_id#/gi, getStatusId(tweetData.finalUrl))
 		.replace(/#original#/gi, basename_noext)
-		.replace(/#username#/gi, getUsername(tweetUrl))
+		// Use original url (t.co)/old username or final url/latest username
+		.replace(/#username#/gi, getUsername(tweetData.finalUrl, options, mediaData))
 		+ extname;
 }
 
 export interface MediaData {
 	error: Error;
 	// Profile
-	name: string,
-	username: string,
-	userId: string,
-	avatar: string,
-	bio: string,
-	website: string,
-	location: string,
-	joined: string,
-	birthday: string,
+	name: string;
+	username: string;
+	userId: string;
+	avatar: string;
+	bioRequest: Promise<Partial<MediaData> | void>;
+	bio: string;
+	website: string;
+	location: string;
+	joined: string;
+	birthday: string;
 	// Tweet
-	text: string,
-	timestamp: number,
-	date: Date,
-	dateFormat: string,
-	isVideo: boolean,
-	media: string[],
-	quoteMedia: string[],
-	quoteRequest?: Promise<MediaData>,
+	finalUrl: string;
+	text: string;
+	timestamp: number;
+	date: Date;
+	dateFormat: string;
+	isVideo: boolean;
+	media: string[];
+	quoteMedia: string[];
+	quoteRequest?: Promise<MediaData>;
 	// Thread
-	ancestors: Promise<string[]>,
-	descendants: Promise<string[]>,
+	ancestors: Promise<string[]>;
+	descendants: Promise<string[]>;
 }
 
 export function newMediaData(mediaData?: Partial<MediaData>): Partial<MediaData> {
@@ -98,7 +111,20 @@ export function newMediaData(mediaData?: Partial<MediaData>): Partial<MediaData>
 	}, mediaData);
 }
 
-export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMediaUrl, mediaData: MediaData, options: Partial<AllOptions>): string {
+export interface TweetData {
+	originalUrl: string;
+	finalUrl: string;
+	username: string;
+}
+
+export function newTweetData(tweetData?: Partial<TweetData>): Partial<TweetData> {
+	return Object.assign({
+		originalUrl: '',
+		finalUrl: '',
+	}, tweetData);
+}
+
+export function createEmbedData(tweetData: TweetData, parsedMedia: ParsedMediaUrl, mediaData: MediaData, options: Partial<AllOptions>): string {
 	let embedData = '';
 
 	if (options.embed || options.text) {
@@ -114,7 +140,8 @@ export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMediaUrl, m
 		---
 		Text: ${mediaData.text}
 		Date: ${mediaData.dateFormat}
-		Tweet: ${tweetUrl}
+		Original URL: ${tweetData.originalUrl}
+		Final URL: ${tweetData.finalUrl}
 		Media: ${parsedMedia.downloadUrl}
 		---`;
 	}
@@ -128,81 +155,12 @@ export function createEmbedData(tweetUrl: string, parsedMedia: ParsedMediaUrl, m
 	return embedData.trim().replace(/\t*/g, '');
 }
 
-const userAgents = [
-	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:63.0) Gecko/20100101 Firefox/63.0',
-	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:62.0) Gecko/20100101 Firefox/62.0',
-	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:61.0) Gecko/20100101 Firefox/61.0',
-	'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:63.0) Gecko/20100101 Firefox/63.0',
-	'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
-	'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
-	'Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko',
-	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
-];
-
-export function getUserAgent(useCustom?: string | boolean): string {
-	return typeof useCustom === 'string' ?
-		useCustom :
-		userAgents[Math.floor(Math.random() * userAgents.length)];
-}
-
-export function getRequestConfig(config: any, options: Partial<AllOptions>, userAgent?: string) {
-	const newConfig = mergeOptions({
-		headers: { 'User-Agent': getUserAgent(userAgent) }
-	}, config) as OptionsWithCheerio;
-
-	if (typeof options !== 'undefined' &&
-		Object.prototype.hasOwnProperty.call(options, 'cookie') &&
-		options.cookie.length > 0) {
-		newConfig.headers.Cookie = options.cookie;
-	}
-
-	return newConfig;
-}
-
-import { got, CancelableRequest, Options, Response, Headers } from 'got';
-
-export type GetRequestHeaders = Headers;
-interface OptionsCommon {
-	uri: string,
-	headers?: GetRequestHeaders,
-	body?: string,
-}
-
-interface OptionsCheerio {
-	cheerio: true
-}
-export type OptionsWithUri = OptionsCommon & Partial<Options>;
-export type OptionsWithCheerio = OptionsCommon & OptionsCheerio & Partial<Options>;
-export type CheerioOrResponse = cheerio.Root | Response;
-
-export function getRequest(config: OptionsWithUri, options?: Partial<AllOptions>): Promise<any>;
-export function getRequest(config: OptionsWithCheerio, options?: Partial<AllOptions>): Promise<cheerio.Root>;
-export function getRequest(config: any, options?: Partial<AllOptions>): Promise<any> {
-	function transformCheerio(response: Response): CheerioOrResponse {
-		if (useCheerio &&
-			(response.statusCode >= 200 && response.statusCode < 300)) {
-			return cheerio.load(response.body as string);
-		}
-		return response;
-	}
-
-	const newConfig = getRequestConfig(config, options);
-	const uri = newConfig.uri;
-	delete newConfig.uri;
-	const useCheerio = newConfig.cheerio;
-	delete newConfig.cheerio;
-
-	let promise = got(uri, newConfig) as CancelableRequest<any>;
-
-	if (useCheerio) {
-		promise = promise.then(transformCheerio) as any;
-	}
-
-	return promise as unknown as Promise<CheerioOrResponse>;
-}
-
-export function normalizeUrl(url: string): string {
-	return url.replace(/^(http(s)?:\/\/)?/i, 'http$2://');
+export function normalizeUrl(url: string): Promise<string> {
+	return Promise.resolve(
+		url
+			.replace(/^(http(s)?:\/\/)?/i, 'http$2://')
+			.replace(/\/(photo|video)\/[1-4]$/i, '')
+	);
 }
 
 export function noOp(): void {

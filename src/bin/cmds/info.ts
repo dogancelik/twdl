@@ -1,8 +1,8 @@
 import * as lib from '../../index.js';
-import * as util from '../util.js';
+import * as cliUtil from '../util.js';
 import mergeOptions from 'merge-options';
-import { AllOptions } from '../../options.js';
-import { createEmbedData, MediaData, parseMediaUrl, SEPERATOR } from '../../util.js';
+import { AllOptions, DownloadUrlFuncReturn } from '../../options.js';
+import * as util from '../../util.js';
 
 export const command = 'info [urls..]';
 export const aliases = ['i'];
@@ -15,26 +15,27 @@ export const builder = mergeOptions(
 );
 
 export function handler(argv: Partial<AllOptions>) {
-	util.loadUrls(argv);
-	util.checkUrls(argv);
-	util.reportUrls(argv);
-	util.applyCookie(argv);
+	cliUtil.loadUrls(argv);
+	cliUtil.checkUrls(argv);
+	cliUtil.reportUrls(argv);
+	cliUtil.applyCookie(argv);
 
 	argv.downloadUrlFn = argv.media ? printMediaOnly : printEmbedData;
 	argv.embed = true;
 	return lib.downloadUrls(argv.urls, argv)
-		.catch((err) => util.exitOnError(argv.debug, err));
+		.catch((err) => cliUtil.debugError(argv.debug, err))
+		.finally(cliUtil.exitWithCode);
 }
 
-function printMediaOnly(mediaUrl: string, tweetUrl: string) {
+function printMediaOnly(mediaUrl: string, tweetData: util.TweetData): DownloadUrlFuncReturn {
 	let status;
 	console.log(mediaUrl);
-	return { status, mediaUrl, tweetUrl };
+	return { status, mediaUrl, tweetUrl: tweetData.finalUrl };
 }
 
-function printEmbedData(mediaUrl: string, tweetUrl: string, mediaData: MediaData, options: Partial<AllOptions>) {
+function printEmbedData(mediaUrl: string, tweetData: util.TweetData, mediaData: util.MediaData, options: Partial<AllOptions>): DownloadUrlFuncReturn {
 	let status;
-	const embedData = createEmbedData(tweetUrl, parseMediaUrl(mediaUrl), mediaData, options);
-	console.log(`${embedData}\n${SEPERATOR}`);
-	return { status, mediaUrl, tweetUrl };
+	const embedData = util.createEmbedData(tweetData, util.parseMediaUrl(mediaUrl), mediaData, options);
+	console.log(`${embedData}\n${util.SEPERATOR}`);
+	return { status, mediaUrl, tweetUrl: tweetData.finalUrl };
 }

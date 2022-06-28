@@ -1,5 +1,5 @@
 import { InferredOptionTypes, Options } from 'yargs';
-import { MediaData, DEFAULT_FORMAT } from './util.js';
+import { MediaData, DEFAULT_FORMAT, TweetData } from './util.js';
 
 export type DownloadUrlFuncReturn = {
 	status: string,
@@ -7,27 +7,28 @@ export type DownloadUrlFuncReturn = {
 	tweetUrl: string,
 };
 // eslint-disable-next-line no-unused-vars
-export type DownloadUrlFunc = (mediaUrl: string, tweetUrl: string, mediaData: MediaData, options: Partial<AllOptions>) => DownloadUrlFuncReturn;
+export type DownloadUrlFunc = (mediaUrl: string, tweetData: TweetData, mediaData: MediaData, options: Partial<AllOptions>) => DownloadUrlFuncReturn;
 
 export interface ModuleOptions {
 	downloadUrlFn: DownloadUrlFunc
 }
 
 export interface CliOptions {
-	_: string[],
-	urls: string[],
-	list: string,
-	cookie: string,
-	debug: boolean,
-	format: string,
-	embed: boolean,
-	data: string,
-	text: boolean,
-	overwrite: boolean,
-	date: boolean,
-	avatar: boolean,
-	quote: boolean,
-	media: boolean,
+	_: string[];
+	urls: string[];
+	list: string;
+	cookie: string;
+	debug: boolean;
+	format: string;
+	embed: boolean;
+	data: string;
+	text: boolean;
+	overwrite: boolean;
+	date: boolean;
+	avatar: boolean;
+	quote: boolean;
+	media: boolean;
+	redirect: boolean;
 }
 
 export type CliOptionTypes = InferredOptionTypes<{
@@ -66,6 +67,7 @@ export type DownloadOptionTypes = InferredOptionTypes<{
 	text: Options;
 	overwrite: Options;
 	date: Options;
+	redirect: Options;
 }>;
 
 export const DownloadOptions: DownloadOptionTypes = {
@@ -108,6 +110,13 @@ export const DownloadOptions: DownloadOptionTypes = {
 		alias: 't',
 		default: false,
 		describe: 'Replace file date with tweet date',
+		type: 'boolean'
+	},
+
+	redirect: {
+		alias: 'r',
+		default: true,
+		describe: 'Follow redirects',
 		type: 'boolean'
 	},
 };

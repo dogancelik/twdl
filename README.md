@@ -3,7 +3,9 @@
 
 [![Build Status](https://travis-ci.com/dogancelik/twdl.svg?branch=master)](https://travis-ci.com/dogancelik/twdl)
 
-Update for June 2022: The `thread` command is temporarily disabled until further notice.
+**Update for June 2022:**
+1. The `thread` command is temporarily disabled until further notice.
+2. Breaking change in v2.6.0+, see Wiki for more info.
 
 ## Install
 
@@ -11,7 +13,8 @@ You need [Node.js](https://nodejs.org/en/) (at least version 14) to use *twdl*.
 You can also use `npx` (available with NPM 5+).
 
 ```sh
-npm i -g twdl
+npm i -g twdl      # Stable version
+npm i -g twdl@beta # Beta version
 ```
 
 ## Usage

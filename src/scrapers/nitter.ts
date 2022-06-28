@@ -1,10 +1,11 @@
 import { RequestError } from "got/dist/source/index.js";
 import logSymbols from "log-symbols";
 import { AllOptions } from "../options.js";
-import { getUserAgent, getUsername, MediaData, newMediaData, OptionsWithCheerio, getRequest, OptionsWithUri } from "../util.js";
+import * as util from "../util.js";
+import * as api from "../api.js";
 import { parseTweetUrl } from "./twitterApi.js";
 
-type NitterInstance = string | OptionsWithUri;
+type NitterInstance = string | api.OptionsWithUri;
 
 const NitterInstances: NitterInstance[] = [
 	'https://nitter.42l.fr',
@@ -20,10 +21,10 @@ const NitterInstances: NitterInstance[] = [
 	'https://nitter.it',
 	'https://nitter.grimneko.de',
 	'https://nitter.ca',
-	'https://nitter.mstdn.social',
+	// 'https://nitter.mstdn.social', // Redirect to main site
 	'https://nitter.weiler.rocks',
 	'https://nitter.sethforprivacy.com',
-	'https://nitter.cutelab.space',
+	// 'https://nitter.cutelab.space', // Not loading
 	'https://nitter.nl',
 	'https://nitter.mint.lgbt',
 	'https://nitter.bus-hit.me',
@@ -35,8 +36,8 @@ const NitterInstances: NitterInstance[] = [
 	'https://nitter.mastodon.pro',
 	'https://nitter.notraxx.ch',
 	'https://nitter.poast.org',
-	'https://nitter.lunar.icu',
-	'https://nitter.bird.froth.zone',
+	// 'https://nitter.lunar.icu', // 404
+	// 'https://nitter.bird.froth.zone', // Not loading
 	'https://nitter.dcs0.hu',
 	'https://nitter.cz',
 	'https://nitter.privacydev.net',
@@ -58,7 +59,7 @@ export function getNitterOptions(getCustom?: string) {
 			options.uri = getCustom;
 		}
 		return options;
-	};
+	}
 
 	const randomIndex = Math.floor(Math.random() * NitterInstances.length),
 		instance = NitterInstances[randomIndex];
@@ -72,17 +73,13 @@ export function getNitterOptions(getCustom?: string) {
 	return options;
 }
 
-type RequestReturn = Promise<Partial<MediaData>>;
+type RequestReturn = Promise<Partial<util.MediaData> | void>;
 
-export function getProfileBio(tweetUrl: string, options: Partial<AllOptions>): RequestReturn {
-	const mediaData = newMediaData(),
-		username = getUsername(tweetUrl),
+export function getProfileBio(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>): RequestReturn {
+	const mediaData = util.newMediaData(),
+		username = tweetData.username ?? util.getUsername(tweetData.finalUrl),
 		nitterOptions = getNitterOptions(),
-		requestConfig: OptionsWithCheerio = {
-			uri: `${nitterOptions.uri}/${username}`,
-			cheerio: true,
-			retry: { limit: 2 },
-		};
+		url = `${nitterOptions.uri}/${username}`;
 
 	function getBioData(jq: cheerio.Root) {
 		const profileCard = jq('.profile-card');
@@ -93,7 +90,10 @@ export function getProfileBio(tweetUrl: string, options: Partial<AllOptions>): R
 		return mediaData;
 	}
 
-	return getRequest(requestConfig).then(getBioData);
+	return api.gotInstance.get(url)
+		.then(api.loadCheerio)
+		.then(getBioData)
+		.catch(e => api.downloadError(e, api.RequestType.NitterBio));
 }
 
 function fixImageUrl(imagePath: string) {
@@ -103,28 +103,32 @@ function fixImageUrl(imagePath: string) {
 	}
 
 	let uri = decodeURIComponent(imagePath);
-	uri = uri.replace(/^\/pic\/enc\/([A-Za-z0-9\/=]+)/, decodeBase64);
+	uri = uri.replace(/^\/pic\/enc\/([A-Za-z0-9/=]+)/, decodeBase64);
 	uri = uri.replace(/^\/pic/, '');
+	uri = uri.replace('_bigger', '');
 	uri = uri.replace('?name=small', '');
 	uri = "https://pbs.twimg.com" + uri;
 	return uri;
 }
 
-export function getMedia(tweetUrl: string, options: Partial<AllOptions>): RequestReturn {
-	const mediaData = newMediaData(),
-		parsedTweetUrl = parseTweetUrl(tweetUrl);
+export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>): RequestReturn {
+	const parsedTweetUrl = parseTweetUrl(tweetData, options);
 
-	function getMediaData(jq: cheerio.Root) {
+	function getMediaData(jq: api.CheerioRoot) {
 		const tweetContainer = jq('.main-tweet').first(),
 			tweet = tweetContainer.find('.timeline-item').first(),
 			mediaContainer = tweet.find('.attachments').first(),
-			mediaData = newMediaData();
+			mediaData = util.newMediaData();
 
 		// Profile related
-		mediaData.name = tweet.find('.fullname').text().trim();
-		mediaData.username = tweet.find('.username').text().trim();
-		mediaData.avatar = tweet.find('.avatar').attr('src').replace('_bigger', '');
+		mediaData.name = tweet.find('.fullname').first().text().trim();
+		mediaData.username = tweet.find('.username').first().text().trim().replace('@', '');
+		mediaData.avatar = fixImageUrl(tweet.find('.avatar').first().attr('src'));
+		// Bio
+		tweetData.username = mediaData.username;
+		mediaData.bioRequest = getProfileBio(tweetData, options);
 		// Tweet related
+		mediaData.finalUrl = jq.finalUrl;
 		mediaData.isVideo = tweet.find('.attachment.video-container, .attachments.media-gif').length > 0;
 		mediaData.text = tweet.find('.tweet-content').text().trim();
 		const dateText = tweet.find('.tweet-date a').first().attr('title').replace(' · ', ' ');
@@ -145,12 +149,10 @@ export function getMedia(tweetUrl: string, options: Partial<AllOptions>): Reques
 	}
 
 	const nitterOptions = getNitterOptions(),
-		requestConfig: OptionsWithCheerio = {
-			uri: `${nitterOptions.uri}/${parsedTweetUrl.username}/status/${parsedTweetUrl.statusId}`,
-			cheerio: true,
-			retry: { limit: 2 },
-		};
-	console.log(`${logSymbols.info} Nitter URL: ${requestConfig.uri}`);
+		url = `${nitterOptions.uri}/${parsedTweetUrl.username}/status/${parsedTweetUrl.statusId}`;
+	console.log(`${logSymbols.info} Nitter URL: ${url}`);
 
-	return getRequest(requestConfig).then(getMediaData);
+	return api.gotInstance.get(url)
+		.then(api.loadCheerio)
+		.then(getMediaData);
 }
