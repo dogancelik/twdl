@@ -84,7 +84,6 @@ export interface MediaData {
 	username: string;
 	userId: string;
 	avatar: string;
-	bioRequest: Promise<Partial<MediaData> | void>;
 	bio: string;
 	website: string;
 	location: string;

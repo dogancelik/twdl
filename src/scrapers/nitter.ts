@@ -1,9 +1,10 @@
-import { RequestError } from "got/dist/source/index.js";
 import logSymbols from "log-symbols";
 import { AllOptions } from "../options.js";
 import * as util from "../util.js";
 import * as api from "../api.js";
 import { parseTweetUrl } from "./twitterApi.js";
+import bluebird from 'bluebird';
+const { join } = bluebird;
 
 type NitterInstance = string | api.OptionsWithUri;
 
@@ -126,7 +127,6 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 		mediaData.avatar = fixImageUrl(tweet.find('.avatar').first().attr('src'));
 		// Bio
 		tweetData.username = mediaData.username;
-		mediaData.bioRequest = getProfileBio(tweetData, options);
 		// Tweet related
 		mediaData.finalUrl = jq.finalUrl;
 		mediaData.isVideo = tweet.find('.attachment.video-container, .attachments.media-gif').length > 0;
@@ -145,6 +145,24 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 			mediaData.media = getImages();
 		}
 
+		return join(
+			mediaData,
+			getProfileBio(tweetData, options),
+			combineMediaData
+		);
+	}
+
+	function combineMediaData(mediaData: util.MediaData, bioData: util.MediaData) {
+		if (mediaData && bioData) {
+			if (bioData.bio)
+				mediaData.bio = bioData.bio;
+			if (bioData.website)
+				mediaData.website = bioData.website;
+			if (bioData.location)
+				mediaData.location = bioData.location;
+			if (bioData.joined)
+				mediaData.joined = bioData.joined;
+		}
 		return mediaData;
 	}
 

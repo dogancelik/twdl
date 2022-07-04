@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { Browser, LaunchOptions } from 'puppeteer/lib/cjs/puppeteer/api-docs-entry';
+import { Browser, LaunchOptions } from 'puppeteer';
 import logSymbols from 'log-symbols';
 import { AllOptions } from '../options.js';
 import { MediaData, newMediaData, noOp } from '../util.js';

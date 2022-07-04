@@ -4,20 +4,14 @@ import mergeOptions from 'merge-options';
 import cheerio from 'cheerio';
 import { AllOptions } from './options.js';
 import { normalizeUrl } from './util.js';
+import * as cache from './cache.js';
 
-export type GetRequestHeaders = got.Headers;
 interface OptionsCommon {
 	uri?: string,
-	headers?: GetRequestHeaders,
+	headers?: got.Headers,
 	body?: string,
 }
-
-interface OptionsCheerio {
-	cheerio: true
-}
 export type OptionsWithUri = OptionsCommon & Partial<got.OptionsInit>;
-export type OptionsWithCheerio = OptionsCommon & OptionsCheerio & Partial<got.OptionsInit>;
-export type CheerioOrResponse = CheerioRoot | GotResponse;
 
 export interface CheerioRoot extends cheerio.Root {
 	finalUrl: string;
@@ -47,7 +41,7 @@ export function getUserAgent(useCustom?: string | boolean): string {
 export function getRequestConfig(config: any, options: Partial<AllOptions>, userAgent?: string) {
 	const newConfig = mergeOptions({
 		headers: { 'User-Agent': getUserAgent(userAgent) }
-	}, config) as OptionsWithCheerio;
+	}, config);
 
 	// TODO: Integrate cookie feature to GOT INSTANCE
 	if (typeof options !== 'undefined' &&
@@ -102,6 +96,9 @@ export function downloadError(err: got.HTTPError & got.Response, requestType: Re
 
 export const gotInstance = got.got.extend({
 	hooks: {
+		beforeRequest: [
+			(options) => cache.readCache(options),
+		],
 		afterResponse: [
 			(response: got.Response, retryWithMergedOptions) => {
 				if (response.statusCode >= 400 && response.statusCode < 500) {
@@ -118,6 +115,7 @@ export const gotInstance = got.got.extend({
 				}
 				return response;
 			},
+			(response) => cache.writeCache(response),
 		],
 		beforeRetry: [
 			error => {

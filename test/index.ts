@@ -1,3 +1,4 @@
+/// <reference path="../src/global.d.ts" />
 import { describe, it } from 'mocha';
 import { assert } from 'chai';
 import { tmpdir } from 'os';
@@ -15,12 +16,16 @@ const testDir = tmpdir();
 function makeTestOptions(downloadUrlFn?: DownloadUrlFunc) {
 	const options = makeOptions({
 		overwrite: true,
-		format: `${testDir}/#original#`
+		format: `${testDir}/#original#`,
+		cache: false, // Disable caching for testing
 	});
-	if (downloadUrlFn != null) options.downloadUrlFn = downloadUrlFn;
+	if (downloadUrlFn != null)
+		options.downloadUrlFn = downloadUrlFn;
+
+	global.argv = options; // For Got hooks
+
 	return options;
 }
-
 
 function testIfAllDownloaded(results, expected = 'downloaded') {
 	assert.equal(results[0][0].status, expected);
@@ -56,6 +61,7 @@ describe('Twdl', function () {
 				status: notDownloaded,
 				mediaUrl,
 				tweetUrl: tweetData.finalUrl,
+				errors: [],
 			};
 		};
 

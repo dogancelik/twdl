@@ -1,7 +1,7 @@
 import * as lib from '../../index.js';
 import * as cliUtil from '../util.js';
 import mergeOptions from 'merge-options';
-import { AllOptions, DownloadUrlFuncReturn } from '../../options.js';
+import { AllOptions } from '../../options.js';
 import * as util from '../../util.js';
 
 export const command = 'info [urls..]';
@@ -27,15 +27,15 @@ export function handler(argv: Partial<AllOptions>) {
 		.finally(cliUtil.exitWithCode);
 }
 
-function printMediaOnly(mediaUrl: string, tweetData: util.TweetData): DownloadUrlFuncReturn {
+function printMediaOnly(mediaUrl: string, tweetData: util.TweetData): lib.DownloadStatus {
 	let status;
 	console.log(mediaUrl);
-	return { status, mediaUrl, tweetUrl: tweetData.finalUrl };
+	return { status, mediaUrl, tweetUrl: tweetData.finalUrl, errors: [] };
 }
 
-function printEmbedData(mediaUrl: string, tweetData: util.TweetData, mediaData: util.MediaData, options: Partial<AllOptions>): DownloadUrlFuncReturn {
+function printEmbedData(mediaUrl: string, tweetData: util.TweetData, mediaData: util.MediaData, options: Partial<AllOptions>): lib.DownloadStatus {
 	let status;
 	const embedData = util.createEmbedData(tweetData, util.parseMediaUrl(mediaUrl), mediaData, options);
 	console.log(`${embedData}\n${util.SEPERATOR}`);
-	return { status, mediaUrl, tweetUrl: tweetData.finalUrl };
+	return { status, mediaUrl, tweetUrl: tweetData.finalUrl, errors: [] };
 }

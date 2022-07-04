@@ -22,10 +22,6 @@ export interface ProcessStatus {
 	exitCode: number;
 }
 
-declare module global {
-	const processStatus: ProcessStatus;
-}
-
 export function checkUrls(argv: Partial<AllOptions>) {
 	if (argv._.length > 1) {
 		const urls = argv._.slice(1);
@@ -43,8 +39,12 @@ export function reportUrls(argv: Partial<AllOptions>) {
 }
 
 export function applyCookie(argv: Partial<AllOptions>) {
-	if (process.env.TWDL_COOKIE != null && argv.cookie === '') {
-		argv.cookie = process.env.TWDL_COOKIE;
+	if (argv) {
+		global.argv = argv;
+
+		if (process.env.TWDL_COOKIE != null && argv.cookie === '') {
+			argv.cookie = process.env.TWDL_COOKIE;
+		}
 	}
 }
 

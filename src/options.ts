@@ -1,19 +1,15 @@
 import { InferredOptionTypes, Options } from 'yargs';
+import { DownloadStatus } from './index.js';
 import { MediaData, DEFAULT_FORMAT, TweetData } from './util.js';
 
-export type DownloadUrlFuncReturn = {
-	status: string,
-	mediaUrl: string,
-	tweetUrl: string,
-};
 // eslint-disable-next-line no-unused-vars
-export type DownloadUrlFunc = (mediaUrl: string, tweetData: TweetData, mediaData: MediaData, options: Partial<AllOptions>) => DownloadUrlFuncReturn;
+export type DownloadUrlFunc = (mediaUrl: string, tweetData: TweetData, mediaData: MediaData, options: Partial<AllOptions>) => DownloadStatus;
 
 export interface ModuleOptions {
 	downloadUrlFn: DownloadUrlFunc
 }
 
-export interface CliOptions {
+export interface ICliOptions {
 	_: string[];
 	urls: string[];
 	list: string;
@@ -29,6 +25,7 @@ export interface CliOptions {
 	quote: boolean;
 	media: boolean;
 	redirect: boolean;
+	cache: boolean;
 }
 
 export type CliOptionTypes = InferredOptionTypes<{
@@ -68,6 +65,7 @@ export type DownloadOptionTypes = InferredOptionTypes<{
 	overwrite: Options;
 	date: Options;
 	redirect: Options;
+	cache: Options;
 }>;
 
 export const DownloadOptions: DownloadOptionTypes = {
@@ -119,6 +117,13 @@ export const DownloadOptions: DownloadOptionTypes = {
 		describe: 'Follow redirects',
 		type: 'boolean'
 	},
+
+	cache: {
+		alias: 'c',
+		default: true,
+		describe: 'Use local cache',
+		type: 'boolean'
+	},
 };
 
 export type DownloadInfoOptionTypes = InferredOptionTypes<{
@@ -155,13 +160,21 @@ export const InfoOptions: InfoOptionTypes = {
 	},
 }
 
-export type AllOptions = CliOptions & ModuleOptions;
+export type AllOptions = ICliOptions & ModuleOptions;
 
-export function makeOptions(newOptions: Partial<AllOptions>): Partial<AllOptions> {
+export function makeOptions(mergeOptions: Partial<AllOptions>): Partial<AllOptions> {
 	const defaultOptions = {};
-	for (const [key, value] of Object.entries<Options>(CliOptions)) {
-		defaultOptions[key] = value.default;
+
+	function setDefaults(optionTypes: CliOptionTypes | DownloadOptionTypes | DownloadInfoOptionTypes | InfoOptionTypes) {
+		for (const [key, value] of Object.entries<Options>(optionTypes)) {
+			defaultOptions[key] = value.default;
+		}
 	}
 
-	return Object.assign(defaultOptions, newOptions);
+	setDefaults(CliOptions);
+	setDefaults(DownloadOptions);
+	setDefaults(DownloadInfoOptions);
+	setDefaults(InfoOptions);
+
+	return Object.assign(defaultOptions, mergeOptions);
 }

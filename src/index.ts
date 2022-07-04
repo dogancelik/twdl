@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import bluebird from 'bluebird';
 const { join, all, mapSeries } = bluebird;
 import { writeFile, stat, utimes } from 'fs/promises';
@@ -8,6 +9,7 @@ import mkdirp from 'mkdirp';
 import { exiftool } from 'exiftool-vendored';
 import logSymbols from 'log-symbols';
 
+import * as cache from './cache.js';
 import * as api from './api.js';
 import * as util from './util.js';
 import * as id from './scrapers/id.js';
@@ -22,7 +24,7 @@ export * from './options.js';
 const exifArgs = ['-overwrite_original'];
 
 export interface DownloadStatus {
-	status: string;
+	status: string | DownloadStatusCode;
 	errors: [string, Error][];
 	mediaUrl: string;
 	tweetUrl: string;
@@ -158,21 +160,6 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData, videoUrl: string) {
 		if (!mediaData) throw new Error('No media data');
 
-		if (mediaData.bioRequest && mediaData.bioRequest.then) {
-			mediaData.bioRequest.then((bioData: util.MediaData) => {
-				if (bioData.bio)
-					mediaData.bio = bioData.bio;
-				if (bioData.website)
-					mediaData.website = bioData.website;
-				if (bioData.location)
-					mediaData.location = bioData.location;
-				if (bioData.joined)
-					mediaData.joined = bioData.joined;
-			}).catch(e => {
-				console.log(`${logSymbols.warning} No bio data`);
-			});
-		}
-
 		if (userId && mediaData.userId == null) {
 			mediaData.userId = userId;
 		}
@@ -207,10 +194,12 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 			});
 	}
 
-	return mapSeries(urls, mapUrls)
+	return cache.reloadCache()
+		.then(() => mapSeries(urls, mapUrls))
 		.finally(() => {
 			exiftool.end(true);
 			puppeteer.cleanBrowser();
+			options.cache && cache.dumpCache();
 		});
 }
 

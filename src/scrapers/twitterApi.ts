@@ -8,7 +8,7 @@ import { AllOptions } from '../options.js';
 // Credits to: https://github.com/Mottl/GetOldTweets3/
 // Also: https://github.com/JustAnotherArchivist/snscrape
 
-export function buildHeaders(userAgent: string): api.GetRequestHeaders {
+export function buildHeaders(userAgent: string): api.OptionsWithUri['headers'] {
 	if (userAgent == null) {
 		userAgent = api.getUserAgent();
 	}
@@ -119,14 +119,8 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 		return mediaData;
 	}
 
-	const requestConfig: api.OptionsWithCheerio = {
-		uri: parsedTweetUrl.permalink,
-		cheerio: true,
-		headers: headers,
-	};
-
 	return api.gotInstance
-		.get(requestConfig.uri, { headers: requestConfig.headers })
+		.get(parsedTweetUrl.permalink, { headers: headers })
 		.then(api.loadCheerio)
 		.then(getMediaData, (err: RequestError) => requestError(err, tweetData.originalUrl, options));
 }
