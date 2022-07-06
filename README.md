@@ -1,7 +1,8 @@
 ![twdl](https://user-images.githubusercontent.com/486818/50049631-7ff38300-00fa-11e9-91e9-8403da26613f.png)  
 **A tool for downloading media of individual tweets**
 
-[![Build Status](https://travis-ci.com/dogancelik/twdl.svg?branch=master)](https://travis-ci.com/dogancelik/twdl)
+[![Github CI: Build Status](https://github.com/dogancelik/twdl/actions/workflows/nodejs.yml/badge.svg)](https://github.com/dogancelik/twdl/actions/workflows/nodejs.yml)
+[![Travis CI: Build Status](https://travis-ci.com/dogancelik/twdl.svg?branch=master)](https://travis-ci.com/dogancelik/twdl)
 
 **Update for June 2022:**
 1. The `thread` command is temporarily disabled until further notice.
@@ -33,8 +34,8 @@ if you want something more, check the alternatives below:
 
 | Repo | Last Update |
 | --- | --- |
-| [gallery-dl](https://github.com/mikf/gallery-dl) | April 2021 |
-| [youtube-dl](https://github.com/ytdl-org/youtube-dl) | April 2021 |
-| [snscrape](https://github.com/JustAnotherArchivist/snscrape/) | April 2021 |
+| [gallery-dl](https://github.com/mikf/gallery-dl) | July 2022 |
+| [youtube-dl](https://github.com/ytdl-org/youtube-dl) | July 2022 |
+| [snscrape](https://github.com/JustAnotherArchivist/snscrape/) | June 2022 |
 | [GetOldTweets3](https://github.com/Mottl/GetOldTweets3/) | May 2020 |
 | [twitter-photos](https://github.com/shichao-an/twitter-photos) | March 2018 |
