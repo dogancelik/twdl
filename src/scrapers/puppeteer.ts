@@ -26,7 +26,6 @@ function getEnglishUrl(tweetUrl: string) {
 }
 
 
-// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	const browser = await getBrowser();
 	const page = await browser.newPage();

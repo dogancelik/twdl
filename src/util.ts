@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import url from 'url';
 import path from 'path';
 import { AllOptions } from './options.js';
@@ -58,7 +57,6 @@ export function parseMediaUrl(mediaUrl: string): ParsedMediaUrl {
 	return data;
 }
 
-// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 export function renderFormat(
 	formatStr: string,
 	parsedMedia: ParsedMediaUrl,

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import bluebird from 'bluebird';
 const { join, all, mapSeries } = bluebird;
 import { writeFile, stat, utimes } from 'fs/promises';

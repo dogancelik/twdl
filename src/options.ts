@@ -2,7 +2,6 @@ import { InferredOptionTypes, Options } from 'yargs';
 import { DownloadStatus } from './index.js';
 import { MediaData, DEFAULT_FORMAT, TweetData } from './util.js';
 
-// eslint-disable-next-line no-unused-vars
 export type DownloadUrlFunc = (mediaUrl: string, tweetData: TweetData, mediaData: MediaData, options: Partial<AllOptions>) => DownloadStatus;
 
 export interface ModuleOptions {

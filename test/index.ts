@@ -55,7 +55,6 @@ describe('Twdl', function () {
 	it('should return with custom function', async function () {
 		const notDownloaded = 'not downloaded';
 
-		// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 		const myDownloadUrlFn: DownloadUrlFunc = (mediaUrl, tweetData, mediaData, options) => {
 			return {
 				status: notDownloaded,
