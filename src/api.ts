@@ -5,6 +5,7 @@ import cheerio from 'cheerio';
 import { AllOptions } from './options.js';
 import { normalizeUrl } from './util.js';
 import * as cache from './cache.js';
+import { getNitterOptions } from './scrapers/nitter.js';
 
 interface OptionsCommon {
 	uri?: string,
@@ -94,6 +95,25 @@ export function downloadError(err: got.HTTPError & got.Response, requestType: Re
 	}
 }
 
+function replaceNitterWithNew(url: string | URL) {
+	if (typeof url === 'string') {
+		try {
+			url = new URL(url);
+		}
+		catch (e) {
+			return url;
+		}
+	}
+
+	if (/nitter/i.test(url.hostname) === false) {
+		return url;
+	}
+
+	const nitterOptions = getNitterOptions();
+	url.hostname = nitterOptions.uri.split('/')[2];
+	return url;
+}
+
 export const gotInstance = got.got.extend({
 	hooks: {
 		beforeRequest: [
@@ -106,9 +126,13 @@ export const gotInstance = got.got.extend({
 						headers: {
 							'User-Agent': getUserAgent(),
 						},
-					}
+					};
 					gotInstance.defaults.options.merge(newOptions);
-					return retryWithMergedOptions(newOptions);
+					const newUrl = replaceNitterWithNew(response.requestUrl);
+					return retryWithMergedOptions({
+						...newOptions,
+						url: newUrl,
+					});
 				}
 				if (!response.request.options.resolveBodyOnly) {
 					(response as GotResponse).finalUrl = response.url;
@@ -119,6 +143,7 @@ export const gotInstance = got.got.extend({
 		],
 		beforeRetry: [
 			error => {
+				error.request.options.url = replaceNitterWithNew(error.request.options.url);
 				console.log(`${logSymbols.warning} Retrying to download again: '${error.request.options.url}'`);
 			}
 		]

@@ -18,33 +18,33 @@ const NitterInstances: NitterInstance[] = [
 	// 'https://nitter.domain.glass', // Can't parse date
 	'https://nitter.namazso.eu',
 	'https://nitter.hu',
-	'https://nitter.moomoo.me',
+	'https://nitter.moomoo.me', // Unstable
 	'https://nitter.it',
 	'https://nitter.grimneko.de',
 	'https://nitter.ca',
 	// 'https://nitter.mstdn.social', // Redirect to main site
 	'https://nitter.weiler.rocks',
 	'https://nitter.sethforprivacy.com',
-	// 'https://nitter.cutelab.space', // Not loading
+	'https://nitter.cutelab.space', // Not loading
 	'https://nitter.nl',
 	'https://nitter.mint.lgbt',
 	'https://nitter.bus-hit.me',
-	'https://nitter.esmailelbob.xyz',
-	'https://nitter.winscloud.net',
+	'https://nitter.esmailelbob.xyz', // Unstable
+	'https://nitter.winscloud.net', // 404
 	'https://nitter.tiekoetter.com',
 	// 'https://nitter.spaceint.fr', // 302 redirect
 	'https://nitter.privacy.com.de',
 	'https://nitter.mastodon.pro',
 	'https://nitter.notraxx.ch',
 	'https://nitter.poast.org',
-	// 'https://nitter.lunar.icu', // 404
-	// 'https://nitter.bird.froth.zone', // Not loading
+	// 'https://nitter.lunar.icu', // Dead
+	'https://nitter.bird.froth.zone', // Not loading
 	'https://nitter.dcs0.hu',
 	'https://nitter.cz',
 	'https://nitter.privacydev.net',
 	'https://nitter.ebnar.xyz',
 	'https://nitter.kylrth.com',
-	'https://nitter.oishi-ra.men',
+	// 'https://nitter.oishi-ra.men', // Dead
 	'https://nitter.foss.wtf',
 	'https://nitter.priv.pw',
 ]
