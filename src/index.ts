@@ -123,9 +123,25 @@ async function downloadUrl(mediaUrl: string, tweetData: util.TweetData, mediaDat
 
 type DownloadUrlsResult = Promise<Array<DownloadStatus[]>>;
 
+function logFound(error: Error, length: number) {
+	function getErrorMessage() {
+		if (error instanceof Error) {
+			return error.message;
+		} else {
+			const message = (error as string || '').toString();
+			return message.length > 0 ? message : 'Unknown error';
+		}
+	}
+
+	if (error) {
+		console.log(`${logSymbols.error} Tweet page error:`, getErrorMessage());
+	} else {
+		console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`);
+	}
+}
+
 export function downloadUrls(urls: string[], options: Partial<AllOptions>): DownloadUrlsResult {
-	const logFound = (length: number) => console.log(`${logSymbols.info} Found ${length} item(s) in tweet.`),
-		downloadUrlFn = typeof options.downloadUrlFn === 'function' ? options.downloadUrlFn : downloadUrl;
+	const downloadUrlFn = typeof options.downloadUrlFn === 'function' ? options.downloadUrlFn : downloadUrl;
 
 	function mapUrls(tweetUrl: string, index: number, length: number) {
 		const tweetUrlPromise = options.redirect ? api.getFinalUrl(tweetUrl) : util.normalizeUrl(tweetUrl),
@@ -176,7 +192,7 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 			mediaCount += 1;
 			mediaData.media.push(videoUrl);
 		}
-		logFound(mediaCount);
+		logFound(mediaData.error, mediaCount);
 
 		return all(
 			mediaData.media

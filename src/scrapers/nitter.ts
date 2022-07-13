@@ -119,7 +119,15 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 		const tweetContainer = jq('.main-tweet').first(),
 			tweet = tweetContainer.find('.timeline-item').first(),
 			mediaContainer = tweet.find('.attachments').first(),
-			mediaData = util.newMediaData();
+			mediaData = util.newMediaData(),
+			errorPanel = jq('.error-panel');
+
+		if (errorPanel.length > 0) {
+			const errorText = errorPanel.text().trim();
+			mediaData.error = new Error(errorText);
+			mediaData.media = [];
+			return mediaData;
+		}
 
 		// Profile related
 		mediaData.name = tweet.find('.fullname').first().text().trim();

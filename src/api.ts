@@ -114,6 +114,17 @@ function replaceNitterWithNew(url: string | URL) {
 	return url;
 }
 
+function shouldRetry(response: got.Response<string>) {
+	const isError = response.statusCode >= 400 && response.statusCode < 600,
+		isNitter = /nitter/i.test(response.url),
+		isNotFound = response.body.toString().includes('Tweet not found');
+
+	return (
+		isError &&
+		(isNitter && isNotFound) === false
+	);
+}
+
 export const gotInstance = got.got.extend({
 	hooks: {
 		beforeRequest: [
@@ -121,7 +132,7 @@ export const gotInstance = got.got.extend({
 		],
 		afterResponse: [
 			(response: got.Response, retryWithMergedOptions) => {
-				if (response.statusCode >= 400 && response.statusCode < 500) {
+				if (shouldRetry(response as any)) {
 					const newOptions: got.OptionsInit = {
 						headers: {
 							'User-Agent': getUserAgent(),
