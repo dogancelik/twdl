@@ -23,7 +23,7 @@ export function getId(tweetData: Partial<TweetData>): Promise<string> {
 		}
 
 		return gotInstance.get(
-			'https://tools.codeofaninja.com/find-twitter-id',
+			'https://www.codeofaninja.com/tools/find-twitter-id',
 			{ cookieJar: cookieJar }
 		)
 			.then(loadCheerio)
@@ -35,7 +35,7 @@ export function getId(tweetData: Partial<TweetData>): Promise<string> {
 
 	function getIdWithToken(csrfToken: string) {
 		return gotInstance.post(
-			'https://tools.codeofaninja.com/find-twitter-id-answer',
+			'https://www.codeofaninja.com/tools/find-twitter-id-answer',
 			{
 				form: { _token: csrfToken, username: username },
 				cookieJar: cookieJar,
