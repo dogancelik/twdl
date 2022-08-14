@@ -1,3 +1,6 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
+import updateNotifier from 'update-notifier';
 import logSymbols from 'log-symbols';
 import fs from 'fs';
 import { AllOptions } from '../options';
@@ -61,5 +64,22 @@ export function debugError(isDebug: boolean, err: Error) {
 export function exitWithCode() {
 	if (global.processStatus.exitCode) {
 		process.exit(global.processStatus.exitCode);
+	}
+}
+
+export function getImportPath() {
+	return path.dirname(fileURLToPath(import.meta.url));
+}
+
+export function checkForUpdates() {
+	try {
+		const packagePath = path.join(getImportPath(), '../../package.json');
+		fs.readFile(packagePath, 'utf8', function (error, data) {
+			if (error) throw error;
+			const packageJson = JSON.parse(data);
+			updateNotifier({ pkg: packageJson }).notify();
+		});
+	} catch (error) {
+		console.error(`${logSymbols.error} Error occurred when checking for updates:`, error.toString());
 	}
 }

@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-var-requires */
+import { checkForUpdates } from './util.js';
+checkForUpdates();
+
 import yargs from 'yargs';
 
 import * as download from './cmds/download.js';
