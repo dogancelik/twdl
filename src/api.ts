@@ -164,7 +164,10 @@ export const gotInstance = got.got.extend({
 		limit: 5,
 		backoffLimit: 5000,
 		statusCodes: [
-			400, 404, 502,
+			400, 404, 502, 530,
+		],
+		errorCodes: [
+			'ETIMEDOUT', 'ECONNRESET', 'ERR_GOT_REQUEST_ERROR',
 		],
 	},
 	timeout: {

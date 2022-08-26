@@ -76,6 +76,10 @@ export function getNitterOptions(getCustom?: string) {
 
 type RequestReturn = Promise<Partial<util.MediaData> | void>;
 
+const gotOptions = {
+	https: { rejectUnauthorized: false },
+};
+
 export function getProfileBio(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>): RequestReturn {
 	const mediaData = util.newMediaData(),
 		username = tweetData.username ?? util.getUsername(tweetData.finalUrl),
@@ -91,7 +95,7 @@ export function getProfileBio(tweetData: Partial<util.TweetData>, options: Parti
 		return mediaData;
 	}
 
-	return api.gotInstance.get(url)
+	return api.gotInstance.get(url, gotOptions)
 		.then(api.loadCheerio)
 		.then(getBioData)
 		.catch(e => api.downloadError(e, api.RequestType.NitterBio));
@@ -178,7 +182,7 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 		url = `${nitterOptions.uri}/${parsedTweetUrl.username}/status/${parsedTweetUrl.statusId}`;
 	console.log(`${logSymbols.info} Nitter URL: ${url}`);
 
-	return api.gotInstance.get(url)
+	return api.gotInstance.get(url, gotOptions)
 		.then(api.loadCheerio)
 		.then(getMediaData);
 }
