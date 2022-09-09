@@ -167,7 +167,8 @@ export const gotInstance = got.got.extend({
 			400, 404, 502, 530,
 		],
 		errorCodes: [
-			'ETIMEDOUT', 'ECONNRESET', 'ERR_GOT_REQUEST_ERROR',
+			'ETIMEDOUT', 'ECONNRESET', 'EADDRINUSE', 'ECONNREFUSED', 'EPIPE',
+			'ENOTFOUND', 'ENETUNREACH', 'EAI_AGAIN', 'ERR_GOT_REQUEST_ERROR',
 		],
 	},
 	timeout: {
