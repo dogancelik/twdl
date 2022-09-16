@@ -4,6 +4,7 @@ import updateNotifier from 'update-notifier';
 import logSymbols from 'log-symbols';
 import fs from 'fs';
 import { AllOptions } from '../options';
+import { CommandModule } from 'yargs';
 
 export function loadUrls(argv: Partial<AllOptions>) {
 	let urls = argv.urls ?? [];
@@ -82,4 +83,8 @@ export function checkForUpdates() {
 	} catch (error) {
 		console.error(`${logSymbols.error} Error occurred when checking for updates:`, error.toString());
 	}
+}
+
+export function getCommand(module: CommandModule) {
+	return [].concat(module.command, module.aliases);
 }

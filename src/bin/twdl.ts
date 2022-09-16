@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-var-requires */
-import { checkForUpdates } from './util.js';
+import { checkForUpdates, getCommand } from './util.js';
 checkForUpdates();
 
 import yargs from 'yargs';
@@ -14,9 +14,9 @@ global.processStatus = { exitCode: 0 };
 yargs(process.argv.slice(2))
 	.scriptName('twdl')
 	// .commandDir('cmds') // not supported, see issue #2152
-	.command('download', download.desc, download.builder, download.handler as any)
-	.command('info', info.desc, info.builder, info.handler as any)
-	.command('thread', thread.desc, thread.builder, thread.handler as any)
+	.command(getCommand(download as any), download.desc, download.builder, download.handler as any)
+	.command(getCommand(info as any), info.desc, info.builder, info.handler as any)
+	.command(getCommand(thread as any), thread.desc, thread.builder, thread.handler as any)
 	.demandCommand()
 	.help()
 	.argv;
