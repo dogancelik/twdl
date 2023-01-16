@@ -112,6 +112,7 @@ function fixImageUrl(imagePath: string) {
 	uri = uri.replace(/^\/pic/, '');
 	uri = uri.replace('_bigger', '');
 	uri = uri.replace('?name=small', '');
+	uri = uri.replace(/&format=[a-z]+/i, '');
 	uri = "https://pbs.twimg.com" + uri;
 	return uri;
 }
