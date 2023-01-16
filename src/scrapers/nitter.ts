@@ -154,7 +154,7 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 		// Media URLs
 		mediaData.media = [];
 		if (!mediaData.isVideo) {
-			mediaData.media = getImages();
+			mediaData.media.push(...getImages());
 		}
 
 		return join(

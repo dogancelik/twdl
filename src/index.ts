@@ -186,7 +186,7 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		}
 		if (options.quote && Array.isArray(mediaData.quoteMedia) && mediaData.quoteMedia.length > 0) {
 			mediaCount += mediaData.quoteMedia.length;
-			mediaData.media = mediaData.media.concat(mediaData.quoteMedia);
+			mediaData.media.push(...mediaData.quoteMedia);
 		}
 		if (videoUrl) {
 			mediaCount += 1;
