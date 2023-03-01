@@ -132,6 +132,10 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 			mediaData.error = new Error(errorText);
 			mediaData.media = [];
 			return mediaData;
+		} else if (tweet.length === 0) {
+			mediaData.error = new Error('Tweet not found');
+			mediaData.media = [];
+			return mediaData;
 		}
 
 		// Profile related
@@ -144,9 +148,11 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 		mediaData.finalUrl = jq.finalUrl;
 		mediaData.isVideo = tweet.find('.attachment.video-container, .attachments.media-gif').length > 0;
 		mediaData.text = tweet.find('.tweet-content').text().trim();
-		const dateText = tweet.find('.tweet-date a').first().attr('title').replace(' · ', ' ');
-		mediaData.date = new Date(dateText);
-		mediaData.dateFormat = mediaData.date.toISOString();
+		const dateText = tweet.find('.tweet-date a').first().attr('title')?.replace(' · ', ' ');
+		if (dateText) {
+			mediaData.date = new Date(dateText);
+			mediaData.dateFormat = mediaData.date.toISOString();
+		}
 		const getImages = () => mediaContainer.find('.attachment.image img')
 			.map((i, el) => jq(el).attr('src'))
 			.get()
