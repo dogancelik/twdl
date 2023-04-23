@@ -1,7 +1,8 @@
 {
 	"compilerOptions": {
 		"module": "ES2020",
-		"moduleResolution": "Node",
+		"moduleResolution": "node16",
+		"skipLibCheck": true,
 		"target": "ES2020",
 		"esModuleInterop": true,
 		"removeComments": true,

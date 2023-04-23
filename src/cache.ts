@@ -1,11 +1,11 @@
-import { Response, Options } from 'got/dist/source';
+import { Response, Options } from 'got';
 import { Readable } from 'node:stream';
 import LruCache from 'lru-cache';
 import _debug from 'debug';
 import fs from 'fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { AllOptions, ICliOptions } from './options';
+import { AllOptions, ICliOptions } from './options.js';
 
 const debug = _debug('twdl:cache');
 

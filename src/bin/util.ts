@@ -3,7 +3,7 @@ import path from 'path';
 import updateNotifier from 'update-notifier';
 import logSymbols from 'log-symbols';
 import fs from 'fs';
-import { AllOptions } from '../options';
+import { AllOptions } from '../options.js';
 import { CommandModule } from 'yargs';
 
 export function loadUrls(argv: Partial<AllOptions>) {
