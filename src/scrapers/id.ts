@@ -6,7 +6,7 @@ import { Response } from 'got';
 function getIdSecond(username: string): Promise<string | undefined> {
 	function getResponse(response: Response) {
 		const body = response.body as string;
-		return body === 'error' ? undefined : body;
+		return body.includes('error') ? undefined : body;
 	}
 
 	return gotInstance.post(
