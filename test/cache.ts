@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha';
 import { assert } from 'chai';
-import { Options } from 'got/dist/source/index.js';
+import { Options } from 'got';
 import * as cache from '../src/cache.js';
 
 const testUrls = [

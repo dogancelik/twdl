@@ -21,7 +21,7 @@ npm i -g twdl@beta # Beta version
 ## Usage
 
 ```sh
-twdl "https://twitter.com/username/status/111" "https://twitter.com/username/status/222"
+twdl download "https://twitter.com/username/status/111" "https://twitter.com/username/status/222"
 twdl --help # show available options
 ```
 
@@ -30,12 +30,4 @@ twdl --help # show available options
 ## Alternatives
 
 ⚠ **twdl is a tool for downloading individual tweets only,**  
-if you want something more, check the alternatives below:
-
-| Repo | Last Update |
-| --- | --- |
-| [gallery-dl](https://github.com/mikf/gallery-dl) | July 2022 |
-| [youtube-dl](https://github.com/ytdl-org/youtube-dl) | July 2022 |
-| [snscrape](https://github.com/JustAnotherArchivist/snscrape/) | June 2022 |
-| [GetOldTweets3](https://github.com/Mottl/GetOldTweets3/) | May 2020 |
-| [twitter-photos](https://github.com/shichao-an/twitter-photos) | March 2018 |
+if you want something more, check the alternatives [here](https://github.com/dogancelik/twdl/wiki/Alternatives).

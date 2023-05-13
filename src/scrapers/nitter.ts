@@ -2,9 +2,15 @@ import logSymbols from "log-symbols";
 import { AllOptions } from "../options.js";
 import * as util from "../util.js";
 import * as api from "../api.js";
+import * as video from "./video.js";
 import { parseTweetUrl } from "./twitterApi.js";
+import type { Response } from 'got';
 import bluebird from 'bluebird';
+import _debug from 'debug';
+import { CookieJar, MemoryCookieStore } from "tough-cookie";
+
 const { join } = bluebird;
+const debug = _debug('twdl:nitter');
 
 type NitterInstance = string | api.OptionsWithUri;
 
@@ -21,7 +27,7 @@ const NitterInstances: NitterInstance[] = [
 	'https://nitter.grimneko.de',
 	'https://nitter.weiler.rocks',
 	'https://nitter.sethforprivacy.com',
-	'https://nitter.cutelab.space', // Not loading
+	// 'https://nitter.cutelab.space', // Not loading
 	'https://nitter.nl',
 	'https://nitter.mint.lgbt',
 	// 'https://nitter.bus-hit.me', // 502
@@ -185,5 +191,126 @@ export function getMedia(tweetData: Partial<util.TweetData>, options: Partial<Al
 
 	return api.gotInstance.get(url, gotOptions)
 		.then(api.loadCheerio)
-		.then(getMediaData);
+		.then(getMediaData)
+		.then(getVideoData);
+
+	async function getVideoData(mediaData: Partial<util.MediaData>) {
+		if (mediaData.isVideo) {
+			let videoUrl = '';
+			try {
+				videoUrl = await getVideo(tweetData, options);
+			} catch (e) {
+				api.downloadError(e, api.RequestType.VideoUrl);
+			}
+			if (videoUrl) {
+				mediaData.media.push(videoUrl);
+			}
+		}
+
+		return mediaData;
+	}
+}
+
+async function getVideo(tweetData: Partial<util.TweetData>, options: Partial<AllOptions>) {
+	const parsedTweetUrl = parseTweetUrl(tweetData, options),
+		nitterOptions = getNitterOptions(),
+		path = `/${parsedTweetUrl.username}/status/${parsedTweetUrl.statusId}`,
+		url = `${nitterOptions.uri}/enablehls`;
+
+	function getPlaylistPlaylistUrl(jq: api.CheerioRoot) {
+		const video = jq('.main-tweet .attachments .attachment.video-container video').first(),
+			videoDataUrl = video.attr('data-url'),
+			videoSource = video.find('source').first();
+
+		if (videoSource.length > 0) {
+			const videoUrl = videoSource.attr('src');
+			debug('Got video source URL: %s', videoUrl);
+			return videoUrl;
+		}
+
+		if (videoDataUrl) {
+			const playlistUrl = `${nitterOptions.uri}${videoDataUrl}`;
+			debug('Got playlist playlist URL: %s', playlistUrl);
+			return api.gotInstance.get(playlistUrl, gotOptions)
+				.then(parsePlaylistPlaylist)
+				// .then(parsePlaylist);
+		}
+	}
+
+	function parsePlaylistPlaylist(response: Response<string>) {
+		const { body: data } = response;
+
+		const lines = data.split('\n');
+		let topPixels = 0;
+		let videoPlaylistUrl = '';
+
+		for (let i = 0; i < lines.length; i++) {
+			if (lines[i].includes('RESOLUTION=')) {
+				const line = lines[i].trim();
+				const resolution = line.match(/RESOLUTION=([\d]+x[\d]+)/)[1];
+				const [width, height] = resolution.split('x').map(Number);
+				const pixels = width * height;
+				if (pixels > topPixels) {
+					topPixels = pixels;
+					const pathOnly = lines[i + 1].trim();
+					videoPlaylistUrl = pathOnly;
+				}
+			}
+		}
+
+		if (videoPlaylistUrl) {
+			if (videoPlaylistUrl.includes('/enc/')) {
+				const urlMatch = videoPlaylistUrl.match(/\/enc\/([A-Za-z0-9]+)\/([^/]+)/);
+				if (urlMatch) {
+					videoPlaylistUrl = decodeURIComponent(urlMatch[2]);
+					const split = videoPlaylistUrl.split('_');
+					for (let i = 0; i < split.length; i++) {
+						split[i] = Buffer.from(split[i], 'base64').toString('ascii');
+					}
+					videoPlaylistUrl = split.join('?');
+				}
+			}
+
+			if (!videoPlaylistUrl.startsWith('https:')) {
+				videoPlaylistUrl = `${nitterOptions.uri}${videoPlaylistUrl}`;
+			}
+
+			if (videoPlaylistUrl.includes('https%3A')) {
+				const parsedUrl = new URL(videoPlaylistUrl);
+				const urlMatch = parsedUrl.pathname.match(/https%3A[^ ]+/);
+				if (urlMatch) {
+					videoPlaylistUrl = decodeURIComponent(urlMatch[0]);
+				}
+			}
+
+			debug('Got highest resolution playlist URL: %s', videoPlaylistUrl);
+			return videoPlaylistUrl;
+			// return api.gotInstance.get(videoPlaylistUrl, gotOptions);
+		}
+	}
+
+	function parsePlaylist(response: Response<string>) {
+		const { body: data } = response;
+		const regex = /#EXT-X-MAP:URI="(.+)"/;
+		const match = data.match(regex);
+		if (match) {
+			const host = response.requestUrl.hostname.includes('video.twimg.com')
+				? `${response.requestUrl.protocol}//${response.requestUrl.hostname}`
+				: nitterOptions.uri;
+			const videoUrl = `${host}${match[1]}`;
+			debug('Got video URL from playlist: %s', videoUrl);
+			return videoUrl;
+		}
+	}
+
+	const cookieJar = new CookieJar();
+	cookieJar.setCookieSync('hlsPlayback=on', url);
+
+	return api.gotInstance.post(url, {
+		...gotOptions,
+		form: { referer: path },
+		cookieJar: cookieJar,
+	})
+		.then(api.loadCheerio)
+		.then(getPlaylistPlaylistUrl);
 }

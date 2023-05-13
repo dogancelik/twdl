@@ -1,3 +1,4 @@
+import { exec } from 'node:child_process';
 import { TweetData } from '../util.js';
 import { gotInstance, loadCheerio } from '../api.js';
 import { CookieJar } from 'tough-cookie';
@@ -33,6 +34,11 @@ function getVideoSecond(tweetData: Partial<TweetData>) {
 
 	function getCsrfToken() {
 		function parseToken(jq: cheerio.Root) {
+			if (jq === undefined) {
+				debug('Cheerio is undefined, check response.');
+				return undefined;
+			}
+
 			const csrfToken = jq('input[name="csrfmiddlewaretoken"]');
 			return csrfToken.length > 0 ? csrfToken.attr('value') : undefined;
 		}
@@ -41,13 +47,21 @@ function getVideoSecond(tweetData: Partial<TweetData>) {
 			`${baseUrl}/`,
 			{ cookieJar: cookieJar }
 		)
-			.then(loadCheerio)
+			.then(loadCheerio, (err) => {
+				debug('Error getting CSRF token: %s', err);
+				return undefined;
+			})
 			.then(parseToken);
 	}
 
 	const cookieJar = new CookieJar();
 
 	function getPageWithToken(csrfToken: string) {
+		if (csrfToken === undefined) {
+			debug('CSRF token is undefined, check response.');
+			return undefined;
+		}
+
 		debug('Got CSRF token: %s', csrfToken);
 		return gotInstance(
 			`${baseUrl}/download`,
@@ -107,5 +121,20 @@ function getVideoSecond(tweetData: Partial<TweetData>) {
 	return getCsrfToken()
 		.then(getPageWithToken)
 		.then(loadCheerio)
-		.then(parsePage);
+		.then(parsePage, (err) => {
+			debug('Error parsing page: %s', err);
+			return undefined;
+		});
+}
+
+export function downloadWithFfmpeg(playlistUrl: string, outputFilename: string) {
+	return new Promise((resolve, reject) => {
+		exec(`ffmpeg -y -i "${playlistUrl}" -c copy "${outputFilename}"`, (err, stdout, stderr) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(stdout);
+			}
+		});
+	});
 }

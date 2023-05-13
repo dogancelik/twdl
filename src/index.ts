@@ -69,12 +69,16 @@ async function downloadUrl(mediaUrl: string, tweetData: util.TweetData, mediaDat
 	}
 
 	try {
-		const body = await api.gotInstance.get(parsedMedia.downloadUrl, {
-			responseType: 'buffer',
-			resolveBodyOnly: true,
-			timeout: { request: 60 * 1000 },
-		}) as Buffer;
-		await writeFile(filename, body);
+		if (parsedMedia.downloadUrl.includes('.m3u8')) {
+			await video.downloadWithFfmpeg(parsedMedia.downloadUrl, filename);
+		} else {
+			const body = await api.gotInstance.get(parsedMedia.downloadUrl, {
+				responseType: 'buffer',
+				resolveBodyOnly: true,
+				timeout: { request: 60 * 1000 },
+			}) as Buffer;
+			await writeFile(filename, body);
+		}
 		console.log(`${logSymbols.success} Downloaded: '${parsedMedia.downloadUrl}' as '${filename}'`);
 	} catch (err) {
 		downloadStatus.errors.push([DownloadStatusCode.FailedDownload, err]);
@@ -162,9 +166,6 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 					.getMedia(tweetData, options)
 					.then(twitterApi.concatQuoteMedia)
 					.catch(e => api.downloadError(e, api.RequestType.NitterMedia)),
-				video
-					.getVideo(tweetData)
-					.catch(e => api.downloadError(e, api.RequestType.VideoUrl)),
 				joinResolved
 			);
 		}
@@ -172,7 +173,7 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		return tweetUrlPromise.then(startParallel);
 	}
 
-	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData, videoUrl: string) {
+	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData) {
 		if (!mediaData) throw new Error('No media data');
 
 		if (userId && mediaData.userId == null) {
@@ -187,10 +188,6 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		if (options.quote && Array.isArray(mediaData.quoteMedia) && mediaData.quoteMedia.length > 0) {
 			mediaCount += mediaData.quoteMedia.length;
 			mediaData.media.push(...mediaData.quoteMedia);
-		}
-		if (videoUrl) {
-			mediaCount += 1;
-			mediaData.media.push(videoUrl);
 		}
 		logFound(mediaData.error, mediaCount);
 

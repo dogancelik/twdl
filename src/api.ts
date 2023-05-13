@@ -157,7 +157,19 @@ export const gotInstance = got.got.extend({
 				error.request.options.url = replaceNitterWithNew(error.request.options.url);
 				console.log(`${logSymbols.warning} Retrying to download again: '${error.request.options.url}'`);
 			}
-		]
+		],
+		beforeRedirect: [
+			async (options, response) => {
+				if (response.statusCode === 302 && options.url.toString().includes('twitter.com')) {
+					let finalRedirectUrl = response.headers.location.startsWith('/')
+						? options.url.toString()
+						: response.headers.location;
+					finalRedirectUrl = await normalizeUrl(finalRedirectUrl);
+					options.url = finalRedirectUrl;
+					options.followRedirect = false;
+				}
+			}
+		],
 	},
 	retry: {
 		methods: ['HEAD', 'GET', 'POST'],

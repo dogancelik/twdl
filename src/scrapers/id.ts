@@ -1,4 +1,4 @@
-import { CookieJar } from 'tough-cookie';
+import { Cookie, CookieJar, MemoryCookieStore } from 'tough-cookie';
 import { getUsername, TweetData } from '../util.js';
 import { gotInstance, loadCheerio } from '../api.js';
 import { Response } from 'got';
@@ -31,7 +31,8 @@ export function getId(tweetData: Partial<TweetData>): Promise<string> {
 	}
 
 	const username = getUsername(tweetData.finalUrl);
-	const cookieJar = new CookieJar();
+	const store = new  MemoryCookieStore()
+	const cookieJar = new CookieJar(store, { looseMode: true });
 
 	function getIdWithToken(csrfToken: string) {
 		return gotInstance.post(

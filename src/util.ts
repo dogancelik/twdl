@@ -64,8 +64,11 @@ export function renderFormat(
 	mediaData: Partial<MediaData>,
 	options: Partial<AllOptions>
 ): string {
-	const extname = path.extname(parsedMedia.basename),
-		basename_noext = parsedMedia.basename.replace(extname, '');
+	let extname = path.extname(parsedMedia.basename);
+	const basename_noext = parsedMedia.basename.replace(extname, '');
+	if (extname === '.m3u8') {
+		extname = '.mp4';
+	}
 
 	return formatStr
 		.replace(/#tweet_id#/gi, getStatusId(tweetData.finalUrl))
