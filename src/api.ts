@@ -70,9 +70,9 @@ export function downloadError(err: got.HTTPError & got.Response, requestType: Re
 			case RequestType.GetId:
 				return 'Request to get user ID';
 			case RequestType.NitterMedia:
-				return 'Tweet download';
+				return 'Nitter media download';
 			case RequestType.NitterBio:
-				return 'Bio download';
+				return 'Nitter bio download';
 			case RequestType.VideoUrl:
 				return 'Request to get video URL';
 			default:
@@ -80,15 +80,16 @@ export function downloadError(err: got.HTTPError & got.Response, requestType: Re
 		}
 	}
 
-	const requestTypeText = getRequestTypeText();
+	const requestTypeText = getRequestTypeText(),
+		statusCode = err.statusCode || 0;
 
 	if (err.name === 'HTTPError') {
 		if (err.statusCode >= 400 && err.statusCode < 500) {
-			console.log(`${logSymbols.error} ${requestTypeText} has failed. Tweet is probably deleted.`, err.statusCode);
+			console.log(`${logSymbols.error} ${requestTypeText} has failed. Tweet is probably deleted.`, statusCode);
 		} else if (err.statusCode >= 500) {
-			console.log(`${logSymbols.error} ${requestTypeText} has failed. There is a technical issue.`, err.statusCode);
+			console.log(`${logSymbols.error} ${requestTypeText} has failed. There is a technical issue.`, statusCode);
 		} else {
-			console.log(`${logSymbols.error} ${requestTypeText} has failed. Unknown error.`, err.statusCode, err.message);
+			console.log(`${logSymbols.error} ${requestTypeText} has failed. Unknown error.`, statusCode, err.message);
 		}
 	} else {
 		throw err;

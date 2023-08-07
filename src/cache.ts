@@ -20,7 +20,7 @@ export function writeCache(response: Response, twdlOptions?: Partial<AllOptions>
 	if (twdlOptions?.cache) {
 		const cacheName = getCacheName(response.request.options);
 		if (!lruCache.has(cacheName) && cacheName) {
-			if (response.body) {
+			if (response.statusCode === 200 && response.body) {
 				debug("Writing cache for '%s' to '%s'", response.url, cacheName);
 				lruCache.set(cacheName, response.body);
 			}

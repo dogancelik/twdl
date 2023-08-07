@@ -32,7 +32,7 @@ const NitterInstances: NitterInstance[] = [
 	'https://nitter.mint.lgbt',
 	// 'https://nitter.bus-hit.me', // 502
 	'https://nitter.esmailelbob.xyz', // Unstable
-	'https://nitter.winscloud.net', // 404
+	// 'https://nitter.winscloud.net', // 404
 	'https://nitter.tiekoetter.com',
 	// 'https://nitter.spaceint.fr', // 302 redirect
 	'https://nitter.privacy.com.de',
