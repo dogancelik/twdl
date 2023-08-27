@@ -63,7 +63,8 @@ export function getNitterOptions(getCustom?: string) {
 	}
 
 	const randomIndex = Math.floor(Math.random() * NitterInstances.length),
-		instance = NitterInstances[randomIndex];
+		envInstance = process.env.TWDL_NITTER_INSTANCE,
+		instance = envInstance || NitterInstances[randomIndex];
 
 	if (typeof instance === 'object') {
 		Object.assign(options, instance);
