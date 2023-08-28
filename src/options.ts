@@ -25,12 +25,14 @@ export interface ICliOptions {
 	media: boolean;
 	redirect: boolean;
 	cache: boolean;
+	ignoreErrors: boolean;
 }
 
 export type CliOptionTypes = InferredOptionTypes<{
 	list: Options;
 	cookie: Options;
 	debug: Options;
+	ignoreErrors: Options;
 }>;
 
 export const CliOptions: CliOptionTypes = {
@@ -52,6 +54,13 @@ export const CliOptions: CliOptionTypes = {
 		alias: 'g',
 		default: false,
 		describe: 'Enable verbose errors for debugging',
+		type: 'boolean'
+	},
+
+	ignoreErrors: {
+		alias: 'i',
+		default: false,
+		describe: 'Ignore errors and continue downloading',
 		type: 'boolean'
 	},
 };

@@ -170,7 +170,17 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 			);
 		}
 
-		return tweetUrlPromise.then(startParallel);
+		return tweetUrlPromise.then(startParallel)
+			.catch(catchErrors);
+
+		function catchErrors(error: Error) {
+			if (options.ignoreErrors) {
+				console.log(`${logSymbols.error} Tweet final error:`, error.toString());
+				return [] as DownloadStatus[];
+			} else {
+				throw error;
+			}
+		}
 	}
 
 	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData) {
