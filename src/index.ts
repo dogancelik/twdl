@@ -184,7 +184,7 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 	}
 
 	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData) {
-		if (!mediaData) throw new Error('No media data');
+		if (!mediaData || !mediaData.media) throw new Error('No media data');
 
 		if (userId && mediaData.userId == null) {
 			mediaData.userId = userId;

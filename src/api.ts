@@ -81,12 +81,12 @@ export function downloadError(err: got.HTTPError & got.Response, requestType: Re
 	}
 
 	const requestTypeText = getRequestTypeText(),
-		statusCode = err.statusCode || 0;
+		statusCode = err?.statusCode || 0;
 
 	if (err.name === 'HTTPError') {
-		if (err.statusCode >= 400 && err.statusCode < 500) {
+		if (statusCode >= 400 && statusCode < 500) {
 			console.log(`${logSymbols.error} ${requestTypeText} has failed. Tweet is probably deleted.`, statusCode);
-		} else if (err.statusCode >= 500) {
+		} else if (statusCode >= 500) {
 			console.log(`${logSymbols.error} ${requestTypeText} has failed. There is a technical issue.`, statusCode);
 		} else {
 			console.log(`${logSymbols.error} ${requestTypeText} has failed. Unknown error.`, statusCode, err.message);
@@ -155,8 +155,10 @@ export const gotInstance = got.got.extend({
 		],
 		beforeRetry: [
 			error => {
-				error.request.options.url = replaceNitterWithNew(error.request.options.url);
-				console.log(`${logSymbols.warning} Retrying to download again: '${error.request.options.url}'`);
+				if (error?.request?.options?.url) {
+					error.request.options.url = replaceNitterWithNew(error.request.options.url);
+					console.log(`${logSymbols.warning} Retrying to download again: '${error.request.options.url}'`);
+				}
 			}
 		],
 		beforeRedirect: [

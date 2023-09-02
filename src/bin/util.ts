@@ -56,7 +56,7 @@ export function debugError(isDebug: boolean, err: Error) {
 	if (isDebug) {
 		throw err;
 	} else {
-		console.error(`${logSymbols.error} Error occurred:`, err.toString());
+		console.error(`${logSymbols.error} Error occurred:`, err?.toString());
 		global.processStatus.exitError = err;
 		global.processStatus.exitCode = 2;
 	}
