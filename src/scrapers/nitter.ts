@@ -49,6 +49,15 @@ const NitterInstances: NitterInstance[] = [
 	// 'https://nitter.priv.pw', // SSL issue
 ]
 
+let EnvInstances: any = process.env.TWDL_NITTER_INSTANCES;
+if (EnvInstances) {
+	const instances = EnvInstances.trim().split(',').filter(Boolean),
+		instancesText = EnvInstances.length > 50
+			? EnvInstances.slice(0, 50) + '…' : EnvInstances;
+	debug('Using custom Nitter instances: %s', instancesText);
+	EnvInstances = instances;
+}
+
 export function getNitterOptions(getCustom?: string) {
 	const options: NitterInstance = {
 		uri: '',
@@ -62,9 +71,9 @@ export function getNitterOptions(getCustom?: string) {
 		return options;
 	}
 
-	const randomIndex = Math.floor(Math.random() * NitterInstances.length),
-		envInstance = process.env.TWDL_NITTER_INSTANCE,
-		instance = envInstance || NitterInstances[randomIndex];
+	const instances = EnvInstances ?? NitterInstances,
+		randomIndex = Math.floor(Math.random() * instances.length),
+		instance = instances[randomIndex];
 
 	if (typeof instance === 'object') {
 		Object.assign(options, instance);
