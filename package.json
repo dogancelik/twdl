@@ -17,7 +17,7 @@
     "downloader"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "type": "module",
   "main": "out/index.js",
