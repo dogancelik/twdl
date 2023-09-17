@@ -17,7 +17,7 @@ import * as puppeteer from './scrapers/puppeteer.js';
 import * as twitterApi from './scrapers/twitterApi.js';
 import * as nitter from './scrapers/nitter.js';
 
-import { AllOptions } from './options.js';
+import { AllOptions, ScraperType } from './options.js';
 export * from './options.js';
 
 const exifArgs = ['-overwrite_original'];
@@ -159,10 +159,10 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 				tweetUrlPromise
 					.then(r => tweetData) // Send 'tweetData' instead of 'tweetUrl'
 					.catch(e => api.downloadError(e, api.RequestType.FinalUrl)),
-				id
+				options.scraper.includes(ScraperType.Id) && id
 					.getId(tweetData)
 					.catch(e => api.downloadError(e, api.RequestType.GetId)),
-				nitter
+				options.scraper.includes(ScraperType.Nitter) && nitter
 					.getMedia(tweetData, options)
 					.then(twitterApi.concatQuoteMedia)
 					.catch(e => api.downloadError(e, api.RequestType.NitterMedia)),

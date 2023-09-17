@@ -26,6 +26,7 @@ export interface ICliOptions {
 	redirect: boolean;
 	cache: boolean;
 	ignoreErrors: boolean;
+	scraper: string[];
 }
 
 export type CliOptionTypes = InferredOptionTypes<{
@@ -74,7 +75,14 @@ export type DownloadOptionTypes = InferredOptionTypes<{
 	date: Options;
 	redirect: Options;
 	cache: Options;
+	scraper: Options;
 }>;
+
+export enum ScraperType {
+	Id = 'id',
+	Nitter = 'nitter',
+	Puppeteer = 'puppeteer',
+}
 
 export const DownloadOptions: DownloadOptionTypes = {
 	format: {
@@ -131,6 +139,13 @@ export const DownloadOptions: DownloadOptionTypes = {
 		default: true,
 		describe: 'Use local cache',
 		type: 'boolean'
+	},
+
+	scraper: {
+		alias: 's',
+		default: [ScraperType.Nitter],
+		describe: 'Use specific scrapers',
+		type: 'array'
 	},
 };
 
