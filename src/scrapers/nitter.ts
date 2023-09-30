@@ -15,39 +15,27 @@ const debug = _debug('twdl:nitter');
 type NitterInstance = string | api.OptionsWithUri;
 
 const NitterInstances: NitterInstance[] = [
-	'https://nitter.42l.fr',
-	'https://nitter.fdn.fr',
-	'https://nitter.1d4.us',
-	'https://nitter.kavin.rocks',
-	// 'https://nitter.unixfox.eu', // Undefined response code + 403
-	// 'https://nitter.domain.glass', // Can't parse date
-	'https://nitter.namazso.eu',
-	'https://nitter.moomoo.me', // Unstable
-	'https://nitter.it',
-	'https://nitter.grimneko.de',
-	'https://nitter.weiler.rocks',
-	'https://nitter.sethforprivacy.com',
-	// 'https://nitter.cutelab.space', // Not loading
-	'https://nitter.nl',
+	// Taken from https://status.d420.de/
+	'https://nitter.catsarch.com',
+	'https://nitter.d420.de',
+	'https://nitter.eu.projectsegfau.lt',
+	'https://nitter.hostux.net',
+	'https://nitter.ktachibana.party',
 	'https://nitter.mint.lgbt',
-	// 'https://nitter.bus-hit.me', // 502
-	'https://nitter.esmailelbob.xyz', // Unstable
-	// 'https://nitter.winscloud.net', // 404
-	'https://nitter.tiekoetter.com',
-	// 'https://nitter.spaceint.fr', // 302 redirect
-	'https://nitter.privacy.com.de',
-	'https://nitter.mastodon.pro',
-	'https://nitter.notraxx.ch',
+	'https://nitter.net',
+	'https://nitter.nohost.network',
+	'https://nitter.perennialte.ch',
 	'https://nitter.poast.org',
-	'https://nitter.lunar.icu',
-	'https://nitter.bird.froth.zone', // Not loading
-	'https://nitter.dcs0.hu',
-	'https://nitter.cz',
 	'https://nitter.privacydev.net',
-	'https://nitter.kylrth.com',
-	'https://nitter.foss.wtf',
-	// 'https://nitter.priv.pw', // SSL issue
-]
+	'https://nitter.projectsegfau.lt',
+	'https://nitter.rawbit.ninja',
+	'https://nitter.salastil.com',
+	'https://nitter.tinfoil-hat.net',
+	'https://nitter.uni-sonia.com',
+	'https://nitter.unixfox.eu',
+	'https://nitter.woodland.cafe',
+	'https://nitter.x86-64-unknown-linux-gnu.zip',
+];
 
 let EnvInstances: any = process.env.TWDL_NITTER_INSTANCES;
 if (EnvInstances) {
