@@ -11,7 +11,8 @@ export function loadUrls(argv: Partial<AllOptions>) {
 	if (argv.list !== '') {
 		try {
 			const text = fs.readFileSync(argv.list),
-				textArray = text.toString().trim().split('\n');
+				textArray = text.toString().trim().split('\n')
+					.filter(ignoreComments);
 			urls = urls.concat(textArray);
 		} catch (e) {
 			console.error(`${logSymbols.error} ${e.toString()}`);
@@ -19,6 +20,10 @@ export function loadUrls(argv: Partial<AllOptions>) {
 	}
 	argv.urls = urls;
 	return urls;
+
+	function ignoreComments(item: string) {
+		return !item.startsWith("#") && item.trim() !== "";
+	}
 }
 
 export interface ProcessStatus {
