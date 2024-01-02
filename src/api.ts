@@ -127,6 +127,9 @@ function shouldRetry(response: got.Response<string>) {
 }
 
 export const gotInstance = got.got.extend({
+	headers: {
+		'User-Agent': getUserAgent(),
+	},
 	hooks: {
 		beforeRequest: [
 			(options) => cache.readCache(options),

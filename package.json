@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
