@@ -46,7 +46,8 @@ export function requestError(err: RequestError, tweetUrl: string, options: Parti
 		console.error(`${logSymbols.error} Page request failed because the provided Cookie is faulty.`);
 		global.processStatus.exitCode = 3;
 	} else if (err.response.statusCode !== 404) {
-		return puppeteer.getMedia(tweetUrl, options);
+		const tweetData = util.newTweetData({ originalUrl: tweetUrl });
+		return puppeteer.getMedia(tweetData, options);
 	} else {
 		throw err;
 	}

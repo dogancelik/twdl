@@ -18,6 +18,7 @@ export function handler(argv: Partial<AllOptions>) {
 	util.checkUrls(argv);
 	util.reportUrls(argv);
 	util.applyCookie(argv);
+	util.parseScrapers(argv);
 
 	return lib.downloadUrls(argv.urls, argv)
 		.catch((err) => util.debugError(argv.debug, err))

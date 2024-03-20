@@ -36,7 +36,7 @@ export function readCache(requestOptions: Options, twdlOptions?: Partial<AllOpti
 		return;
 
 	const cacheName = getCacheName(requestOptions),
-		cachedData = lruCache.get<string>(cacheName);
+		cachedData = lruCache.get(cacheName);
 	if (cacheName && cachedData) {
 		debug("Reading cache for '%s' from '%s'", requestOptions.url.toString(), cacheName);
 		const response = new Readable({

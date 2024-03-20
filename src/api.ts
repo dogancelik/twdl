@@ -23,14 +23,8 @@ export interface GotResponse<T = unknown> extends got.Response<T> {
 }
 
 const userAgents = [
-	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:63.0) Gecko/20100101 Firefox/63.0',
-	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:62.0) Gecko/20100101 Firefox/62.0',
-	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:61.0) Gecko/20100101 Firefox/61.0',
-	'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:63.0) Gecko/20100101 Firefox/63.0',
-	'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
-	'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
-	'Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko',
-	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
+	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.3',
+	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.1',
 ];
 
 export function getUserAgent(useCustom?: string | boolean): string {
@@ -59,6 +53,7 @@ export enum RequestType {
 	GetId,
 	NitterMedia,
 	NitterBio,
+	PuppeteerMedia,
 	VideoUrl,
 }
 
@@ -73,6 +68,8 @@ export function downloadError(err: got.HTTPError & got.Response, requestType: Re
 				return 'Nitter media download';
 			case RequestType.NitterBio:
 				return 'Nitter bio download';
+			case RequestType.PuppeteerMedia:
+				return 'Puppeteer media download';
 			case RequestType.VideoUrl:
 				return 'Request to get video URL';
 			default:
@@ -142,8 +139,10 @@ export const gotInstance = got.got.extend({
 							'User-Agent': getUserAgent(),
 						},
 					};
+					/*
 					gotInstance.defaults.options.merge(newOptions);
-					const newUrl = replaceNitterWithNew(response.requestUrl);
+					*/
+					const newUrl = replaceNitterWithNew(response.requestUrl as URL);
 					return retryWithMergedOptions({
 						...newOptions,
 						url: newUrl,
@@ -159,7 +158,7 @@ export const gotInstance = got.got.extend({
 		beforeRetry: [
 			error => {
 				if (error?.request?.options?.url) {
-					error.request.options.url = replaceNitterWithNew(error.request.options.url);
+					error.request.options.url = replaceNitterWithNew(error.request.options.url as URL);
 					console.log(`${logSymbols.warning} Retrying to download again: '${error.request.options.url}'`);
 				}
 			}

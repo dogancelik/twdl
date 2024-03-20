@@ -3,7 +3,7 @@ import path from 'path';
 import updateNotifier from 'update-notifier';
 import logSymbols from 'log-symbols';
 import fs from 'fs';
-import { AllOptions } from '../options.js';
+import { AllOptions, ScraperType } from '../options.js';
 import { CommandModule } from 'yargs';
 
 export function loadUrls(argv: Partial<AllOptions>) {
@@ -52,9 +52,27 @@ export function applyCookie(argv: Partial<AllOptions>) {
 		global.argv = argv;
 
 		if (process.env.TWDL_COOKIE != null && argv.cookie === '') {
-			argv.cookie = process.env.TWDL_COOKIE;
+			try {
+				const cookie = fs.readFileSync(process.env.TWDL_COOKIE, { encoding: 'utf8' });
+				argv.cookie = cookie;
+			} catch (e) {
+				argv.cookie = process.env.TWDL_COOKIE;
+			}
 		}
 	}
+}
+
+export function parseScrapers(argv: Partial<AllOptions>) {
+	const allScrapers = Object.values(ScraperType);
+	argv.scraper = argv.scraper.split(',').map((scraper) => {
+		const regex = new RegExp(`^${scraper}`, 'i');
+		const scraperType = allScrapers.find((scraper) => regex.test(scraper));
+		if (scraperType) {
+			return scraperType;
+		}
+		console.warn(`${logSymbols.warning} Invalid scraper: ${scraper}`);
+		return undefined;
+	}).filter(Boolean).join(',');
 }
 
 export function debugError(isDebug: boolean, err: Error) {

@@ -1,8 +1,12 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { CookieParam, HTTPResponse } from 'puppeteer';
 import { Browser, LaunchOptions } from 'puppeteer';
 import logSymbols from 'log-symbols';
 import { AllOptions } from '../options.js';
-import { MediaData, newMediaData, noOp } from '../util.js';
+import { MediaData, TweetData, newMediaData, noOp } from '../util.js';
+import { setTimeout } from "node:timers/promises";
+import _debug from 'debug';
+
+const debug = _debug('twdl:puppeteer');
 
 let _browser = null;
 
@@ -13,8 +17,15 @@ export function cleanBrowser(): Promise<null> {
 	});
 }
 
+const envOptions = process.env.TWDL_PUPPETEER_OPTS;
+
 export async function getBrowser(launchOptions?: LaunchOptions): Promise<Browser> {
 	launchOptions = launchOptions || {};
+	if (envOptions) {
+		const parsed = JSON.parse(envOptions);
+		Object.assign(launchOptions, parsed);
+		debug('Launch options for Puppeteer: %j', launchOptions);
+	}
 	if (_browser === null) {
 		_browser = await puppeteer.launch(launchOptions)
 	}
@@ -25,17 +36,42 @@ function getEnglishUrl(tweetUrl: string) {
 	return tweetUrl.split('?')[0] + '?lang=en';
 }
 
-
-export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
+export async function getMedia(tweetData: Partial<TweetData>, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	const browser = await getBrowser();
 	const page = await browser.newPage();
-	await page.goto(getEnglishUrl(tweetUrl));
+	if (options.cookie) {
+		let cookie: CookieParam[] = [];
+		try {
+			cookie = JSON.parse(options.cookie)
+			debug('Loading cookies: %j', cookie);
+		} catch (e) {
+			debug('Failed to parse cookie: %s', e);
+		}
+		await page.setCookie(...cookie);
+	}
+
+	const mediaData = newMediaData();
+	mediaData.media = [];
+	page.on('response', watchForPlaylistUrl);
+	let playlistCount = 0;
+	async function watchForPlaylistUrl(response: HTTPResponse) {
+		const url = response.url();
+		if (/video.twimg.com.*m3u8/.test(url)) {
+			debug('Found playlist URL: %s', url);
+			if (playlistCount === 0) {
+				mediaData.media.push(url);
+				page.off('response', watchForPlaylistUrl);
+			}
+			playlistCount++;
+		}
+	}
+	await page.goto(getEnglishUrl(tweetData.finalUrl));
 
 	// Tweet failed to load
 	page.waitForSelector('div[data-testid="primaryColumn"] > div > div > div > div > div + div[role="button"]')
 		.then((refreshElement) => refreshElement.click(), noOp);
 
-	let article = null;
+	let article: Awaited<ReturnType<typeof page.waitForSelector>> = null
 	try {
 		article = await page.waitForSelector('div[aria-label="Timeline: Conversation"] > div > div:first-child > div > div > article');
 	} catch (err) {
@@ -48,15 +84,14 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 	article.$('div[data-testid="tweet"]:not(.r-d0pm55) > div > div > div > div + div > div[role="button"]')
 		.then((viewButton) => viewButton && viewButton.click(), noOp);
 
-	const mediaData = newMediaData();
 	const source = await article.$('div[dir] > a[href*="#source-labels"]'), // Source app (e.g. Twitter for Android)
-		dateHandle = await page.evaluateHandle((e: HTMLElement) => e.previousElementSibling.previousElementSibling, source),
+		dateHandle = await page.waitForSelector('a[aria-label*=" · "]:has(> time[datetime])'),
 		dateText = (await page.evaluate((e: HTMLElement) => e.innerText, dateHandle)).replace(' · ', ' ');
 	mediaData.timestamp = Date.parse(dateText);
 	mediaData.date = new Date(mediaData.timestamp);
 	mediaData.dateFormat = mediaData.date.toISOString();
 
-	const nameParts = await article.$$('a[role="link"][data-focusable="true"] > div > div > div[dir]'),
+	const nameParts = await article.$$('div[data-testid="User-Name"] > div'),
 		nameElement = nameParts[0],
 		usernameElement = nameParts[nameParts.length - 1];
 	mediaData.name = await page.evaluate((e: HTMLElement) => e.innerText, nameElement);
@@ -69,22 +104,22 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 		mediaData.text = await page.evaluate((e: HTMLElement) => e.innerText, textElement);
 	}
 
-	mediaData.media = [];
 	const quoteMedia = [],
 		images = await article.$$('img[draggable="true"]'),
 		quoteImages = await article.$$('div[role="blockquote"] img[draggable="true"]');
 	mediaData.isVideo = await article.$$eval('img[draggable="false"]', (els: { length: number; }) => els.length === 1);
 	mediaData.avatar = await page.evaluate((e: HTMLImageElement) => e.src.replace('_bigger', ''), images[0]);
 
-	// Remove the avatar
-	for (const img of images.slice(1)) {
-		const src = await page.evaluate((e: HTMLImageElement) => e.src, img);
-		mediaData.media.push(src);
-	}
+	await pushImages(images);
+	await pushImages(quoteImages);
 
-	for (const img of quoteImages) {
-		const src = await page.evaluate((e: HTMLImageElement) => e.src, img);
-		quoteMedia.push(src);
+	async function pushImages(arr: typeof images) {
+		for (const img of arr) {
+			const src = await page.evaluate((e: HTMLImageElement) => e.src, img);
+			// Ignore avatars
+			if (!src.includes('profile_images'))
+				mediaData.media.push(src);
+		}
 	}
 
 	// Remove quote images
@@ -93,12 +128,19 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 	});
 
 	// Scrape profile metadata after media
-	const profile = await article.$('a[role="link"][data-focusable="true"]');
+	const profile = await nameElement.$('a[role="link"]');
+	if (mediaData.isVideo) {
+		await page.waitForNetworkIdle({ timeout: 5e3 });
+	}
 	await profile.click();
-	const button = await page.$x("//div[@role='button' and contains(string(), 'Yes, view profile')]");
-	if (button.length > 0) {
-		// Skip profile warning
-		await page.evaluate((el: HTMLElement) => el.click(), button[0]);
+	try {
+		const button = await page.waitForSelector("xpath//div[@role='button' and contains(string(), 'Yes, view profile')]", { timeout: 5e3 });
+		if (button) {
+			// Skip profile warning
+			await page.evaluate((el: HTMLElement) => el.click(), button[0]);
+		}
+	} catch (err) {
+		//
 	}
 	await page.waitForSelector('nav[aria-label="Profile timelines"]');
 
@@ -109,7 +151,7 @@ export async function getMedia(tweetUrl: string, options: Partial<AllOptions>): 
 		console.error(`${logSymbols.warning} No bio detected`);
 	}
 
-	await page.waitForTimeout(500); // Birthday renders later
+	await setTimeout(500); // Birthday renders later
 	const headerItems = await page.$$eval('div[data-testid="UserProfileHeader_Items"] > *', (els: HTMLAnchorElement[]) => {
 		return els.map((e) => e.tagName === 'A' ? `${e.href} (${e.innerText})` : e.innerText);
 	});

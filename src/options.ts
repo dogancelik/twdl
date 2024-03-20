@@ -26,7 +26,7 @@ export interface ICliOptions {
 	redirect: boolean;
 	cache: boolean;
 	ignoreErrors: boolean;
-	scraper: string[];
+	scraper: string;
 }
 
 export type CliOptionTypes = InferredOptionTypes<{
@@ -143,9 +143,9 @@ export const DownloadOptions: DownloadOptionTypes = {
 
 	scraper: {
 		alias: 's',
-		default: [ScraperType.Nitter],
+		default: ScraperType.Puppeteer,
 		describe: 'Use specific scrapers',
-		type: 'array'
+		type: 'string'
 	},
 };
 

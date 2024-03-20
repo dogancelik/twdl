@@ -16,25 +16,8 @@ type NitterInstance = string | api.OptionsWithUri;
 
 const NitterInstances: NitterInstance[] = [
 	// Taken from https://status.d420.de/
-	'https://nitter.catsarch.com',
-	'https://nitter.d420.de',
-	'https://nitter.eu.projectsegfau.lt',
-	'https://nitter.hostux.net',
-	'https://nitter.ktachibana.party',
-	'https://nitter.mint.lgbt',
-	'https://nitter.net',
-	'https://nitter.nohost.network',
-	'https://nitter.perennialte.ch',
 	'https://nitter.poast.org',
 	'https://nitter.privacydev.net',
-	'https://nitter.projectsegfau.lt',
-	'https://nitter.rawbit.ninja',
-	'https://nitter.salastil.com',
-	'https://nitter.tinfoil-hat.net',
-	'https://nitter.uni-sonia.com',
-	'https://nitter.unixfox.eu',
-	'https://nitter.woodland.cafe',
-	'https://nitter.x86-64-unknown-linux-gnu.zip',
 ];
 
 let EnvInstances: any = process.env.TWDL_NITTER_INSTANCES;

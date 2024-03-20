@@ -166,11 +166,15 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 					.getMedia(tweetData, options)
 					.then(twitterApi.concatQuoteMedia)
 					.catch(e => api.downloadError(e, api.RequestType.NitterMedia)),
+				options.scraper.includes(ScraperType.Puppeteer) && puppeteer
+					.getMedia(tweetData, options)
+					.catch(e => api.downloadError(e, api.RequestType.PuppeteerMedia)),
 				joinResolved
 			);
 		}
 
-		return tweetUrlPromise.then(startParallel)
+		return tweetUrlPromise
+			.then(startParallel, catchErrors)
 			.catch(catchErrors);
 
 		function catchErrors(error: Error) {
@@ -183,8 +187,12 @@ export function downloadUrls(urls: string[], options: Partial<AllOptions>): Down
 		}
 	}
 
-	function joinResolved(tweetData: util.TweetData, userId: string, mediaData: util.MediaData) {
-		if (!mediaData || !mediaData.media) throw new Error('No media data');
+	function joinResolved(tweetData: util.TweetData, userId: string, nitterData: util.MediaData, puppeteerData: util.MediaData) {
+		if ((!nitterData || !nitterData.media) && (!puppeteerData || !puppeteerData.media)) {
+			throw new Error('No media data');
+		}
+
+		const mediaData = Object.assign({}, nitterData, puppeteerData);
 
 		if (userId && mediaData.userId == null) {
 			mediaData.userId = userId;
