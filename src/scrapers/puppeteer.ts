@@ -36,6 +36,33 @@ function getEnglishUrl(tweetUrl: string) {
 	return tweetUrl.split('?')[0] + '?lang=en';
 }
 
+function getVideoUrls(jsonResponses: any[] = []) {
+	const videoUrls = [];
+	jsonResponses.forEach((json) => {
+		json.data?.threaded_conversation_with_injections_v2?.instructions?.forEach((instruction) => {
+			instruction.entries?.forEach((entry: any) => {
+				entry.content?.itemContent?.tweet_results?.result?.legacy?.entities?.media?.forEach((media: any) => {
+					const variants = media.video_info?.variants?.filter((i: any) => i.bitrate) || [];
+					variants.sort((a: any, b: any) => b.bitrate - a.bitrate);
+					const videoUrl = variants?.[0]?.url;
+					if (videoUrl) {
+						debug('Found video URL: %s', videoUrl);
+						videoUrls.push(videoUrl);
+						return;
+					}
+
+					const m3u8Url = media.video_info?.variants?.find((i: any) => i.url.includes(".m3u8"))?.url;
+					if (m3u8Url) {
+						debug('Found m3u8 URL: %s', m3u8Url);
+						videoUrls.push(m3u8Url);
+					}
+				});
+			});
+		});
+	});
+	return videoUrls;
+}
+
 export async function getMedia(tweetData: Partial<TweetData>, options: Partial<AllOptions>): Promise<Partial<MediaData>> {
 	const browser = await getBrowser();
 	const page = await browser.newPage();
@@ -53,16 +80,16 @@ export async function getMedia(tweetData: Partial<TweetData>, options: Partial<A
 	const mediaData = newMediaData();
 	mediaData.media = [];
 	page.on('response', watchForPlaylistUrl);
-	let playlistCount = 0;
+	const jsonResponses = [];
 	async function watchForPlaylistUrl(response: HTTPResponse) {
+		// skip preflight requests
+		if (response.request().method() === 'OPTIONS') return;
+
 		const url = response.url();
-		if (/video.twimg.com.*m3u8/.test(url)) {
-			debug('Found playlist URL: %s', url);
-			if (playlistCount === 0) {
-				mediaData.media.push(url);
-				page.off('response', watchForPlaylistUrl);
-			}
-			playlistCount++;
+		if (/(TweetResultByRestId|TweetDetail)/.test(url)) {
+			debug('Found JSON URL: %s…', url.substr(0, 100));
+			const json = await response.json();
+			jsonResponses.push(json);
 		}
 	}
 	await page.goto(getEnglishUrl(tweetData.finalUrl));
@@ -76,6 +103,8 @@ export async function getMedia(tweetData: Partial<TweetData>, options: Partial<A
 		article = await page.waitForSelector('div[aria-label="Timeline: Conversation"] > div > div:first-child > div > div > article');
 	} catch (err) {
 		if (err.name === 'TimeoutError') {
+			if (!options.cookie)
+				console.log(`${logSymbols.warning} You can use cookies to bypass restricted content, see Wiki for more info.`);
 			throw new Error('Selector error, tweet is not found. Check twdl for updates.');
 		}
 	}
@@ -107,8 +136,8 @@ export async function getMedia(tweetData: Partial<TweetData>, options: Partial<A
 	const quoteMedia = [],
 		images = await article.$$('img[draggable="true"]'),
 		quoteImages = await article.$$('div[role="blockquote"] img[draggable="true"]');
-	mediaData.isVideo = await article.$$eval('img[draggable="false"]', (els: { length: number; }) => els.length === 1);
-	mediaData.avatar = await page.evaluate((e: HTMLImageElement) => e.src.replace('_bigger', ''), images[0]);
+	mediaData.isVideo = await article.$$eval('div[data-testid="videoComponent"]', (els: { length: number; }) => els.length > 0);
+	mediaData.avatar = await page.evaluate((e: HTMLImageElement) => e.src.replace(/_(bigger|normal)/, ''), images[0]);
 
 	await pushImages(images);
 	await pushImages(quoteImages);
@@ -127,11 +156,17 @@ export async function getMedia(tweetData: Partial<TweetData>, options: Partial<A
 		return quoteMedia.indexOf(val) < 0;
 	});
 
+	if (jsonResponses.length > 0) {
+		debug('Trying to get video data');
+		try {
+			mediaData.media.push(...getVideoUrls(jsonResponses));
+		} catch (err) {
+			//
+		}
+	}
+
 	// Scrape profile metadata after media
 	const profile = await nameElement.$('a[role="link"]');
-	if (mediaData.isVideo) {
-		await page.waitForNetworkIdle({ timeout: 5e3 });
-	}
 	await profile.click();
 	try {
 		const button = await page.waitForSelector("xpath//div[@role='button' and contains(string(), 'Yes, view profile')]", { timeout: 5e3 });
@@ -148,7 +183,7 @@ export async function getMedia(tweetData: Partial<TweetData>, options: Partial<A
 		const bioElement = await page.$('div[data-testid="UserDescription"]');
 		mediaData.bio = await page.evaluate((e: HTMLElement) => e.innerText, bioElement);
 	} catch (err) {
-		console.error(`${logSymbols.warning} No bio detected`);
+		console.error(`${logSymbols.warning} No bio description detected`);
 	}
 
 	await setTimeout(500); // Birthday renders later
