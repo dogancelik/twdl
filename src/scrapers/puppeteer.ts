@@ -39,28 +39,36 @@ function getEnglishUrl(tweetUrl: string) {
 function getVideoUrls(jsonResponses: any[] = []) {
 	const videoUrls = [];
 	jsonResponses.forEach((json) => {
+		// If logged in
 		json.data?.threaded_conversation_with_injections_v2?.instructions?.forEach((instruction) => {
-			instruction.entries?.forEach((entry: any) => {
-				entry.content?.itemContent?.tweet_results?.result?.legacy?.entities?.media?.forEach((media: any) => {
-					const variants = media.video_info?.variants?.filter((i: any) => i.bitrate) || [];
-					variants.sort((a: any, b: any) => b.bitrate - a.bitrate);
-					const videoUrl = variants?.[0]?.url;
-					if (videoUrl) {
-						debug('Found video URL: %s', videoUrl);
-						videoUrls.push(videoUrl);
-						return;
-					}
-
-					const m3u8Url = media.video_info?.variants?.find((i: any) => i.url.includes(".m3u8"))?.url;
-					if (m3u8Url) {
-						debug('Found m3u8 URL: %s', m3u8Url);
-						videoUrls.push(m3u8Url);
-					}
-				});
-			});
+			instruction.entries?.forEach(searchEntry);
 		});
+		// If not logged in
+		if (json.data?.tweetResult) {
+			searchEntry(json.data);
+		}
 	});
 	return videoUrls;
+
+	function searchEntry(entry: any) {
+		const results = entry.content?.itemContent?.tweet_results || entry.tweetResult;
+		results?.result?.legacy?.entities?.media?.forEach((media: any) => {
+			const variants = media.video_info?.variants?.filter((i: any) => i.bitrate) || [];
+			variants.sort((a: any, b: any) => b.bitrate - a.bitrate);
+			const videoUrl = variants?.[0]?.url;
+			if (videoUrl) {
+				debug('Found video URL: %s', videoUrl);
+				videoUrls.push(videoUrl);
+				return;
+			}
+
+			const m3u8Url = media.video_info?.variants?.find((i: any) => i.url.includes(".m3u8"))?.url;
+			if (m3u8Url) {
+				debug('Found m3u8 URL: %s', m3u8Url);
+				videoUrls.push(m3u8Url);
+			}
+		});
+	}
 }
 
 export async function getMedia(tweetData: Partial<TweetData>, options: Partial<AllOptions>): Promise<Partial<MediaData>> {

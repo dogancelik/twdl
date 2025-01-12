@@ -1,7 +1,7 @@
 {
   "name": "twdl",
   "description": "Downloads image and video tweets from Twitter",
-  "version": "2.11.1",
+  "version": "2.12.0-beta.0",
   "license": "MIT",
   "repository": "github:dogancelik/twdl",
   "author": {
@@ -44,7 +44,7 @@
     "mkdirp": "^1.0.4",
     "puppeteer": "^22.7.1",
     "replace-ext": "^2.0.0",
-    "tough-cookie": "^4.1.2",
+    "tough-cookie": "^5.1.0",
     "update-notifier": "^6.0.2",
     "yargs": "^17.5.1"
   },
